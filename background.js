@@ -14,9 +14,7 @@ class MowenNoteHelper {
         chrome.action.onClicked.addListener((tab) => {
             if (chrome.sidePanel) {
                 chrome.sidePanel.open({ tabId: tab.id })
-                    .then(() => {
-                        console.log('侧边栏已打开');
-                    })
+                    .then(() => {})
                     .catch((error) => {
                         console.error('打开侧边栏失败:', error);
                         // 如果侧边栏失败，作为后备方案显示popup
@@ -41,7 +39,6 @@ class MowenNoteHelper {
                     const result = await chrome.storage.local.get(['sidePanelMode']);
                     if (result.sidePanelMode === true && chrome.sidePanel) {
                         // 可以在这里添加侧边栏相关的逻辑
-                        console.log('标签页切换，侧边栏模式已激活:', activeInfo.tabId);
                     }
                 } catch (error) {
                     console.error('处理标签页切换失败:', error);
@@ -58,7 +55,6 @@ class MowenNoteHelper {
                         const result = await chrome.storage.local.get(['sidePanelMode']);
                         if (result.sidePanelMode === true && chrome.sidePanel) {
                             // 页面加载完成，可以通知侧边栏更新
-                            console.log('页面加载完成，侧边栏模式已激活:', tabId);
                         }
                     } catch (error) {
                         console.error('处理页面更新失败:', error);
@@ -118,10 +114,7 @@ class MowenNoteHelper {
             if (chrome.sidePanel) {
                 try {
                     // 通过设置popup来覆盖侧边栏行为
-                    console.log('popup已设置，侧边栏应该会被替代');
-                } catch (error) {
-                    console.log('侧边栏处理时出错:', error);
-                }
+                } catch (error) {}
             }
 
             // 立即通过程序化方式打开popup
@@ -129,7 +122,6 @@ class MowenNoteHelper {
                 // Chrome 99+ 支持 openPopup API
                 if (chrome.action.openPopup) {
                     await chrome.action.openPopup();
-                    console.log('通过openPopup API打开popup');
                 } else {
                     // 备用方案：通过windows API创建popup样式的窗口
                     const popupWindow = await chrome.windows.create({
@@ -139,12 +131,10 @@ class MowenNoteHelper {
                         height: 600,
                         focused: true
                     });
-                    console.log('通过windows API创建popup窗口:', popupWindow.id);
                 }
             } catch (openError) {
                 console.error('打开popup失败:', openError);
                 // 如果都失败了，至少popup已经设置好了，用户可以手动点击图标
-                console.log('popup已设置，用户可以点击扩展图标打开');
             }
 
             sendResponse({ success: true, message: '已切换到popup模式' });
@@ -169,7 +159,6 @@ class MowenNoteHelper {
                 // 这里不能用await，必须在同步上下文中执行
                 chrome.sidePanel.open({ tabId: tabId })
                     .then(() => {
-                        console.log('侧边栏已打开');
                         sendResponse({ success: true, message: '已切换到侧边栏模式' });
                     })
                     .catch((error) => {
@@ -195,46 +184,35 @@ class MowenNoteHelper {
     async handleProcessContentAsync(request) {
         const { taskId, tabId, data, settings } = request;
 
-        console.log(`开始异步处理内容，任务ID: ${taskId}, 标签页ID: ${tabId}`);
-
         try {
             // 更新任务状态为处理中
             await this.updateTaskStatus(tabId, taskId, 'processing', '正在使用AI处理内容...');
 
             // 在AI处理前检查任务是否被取消
             if (await this.isTaskCancelled(tabId, taskId)) {
-                console.log('检测到任务已被取消，停止处理');
                 return;
             }
 
             // 处理内容
-            console.log('开始调用AI API处理内容...');
             const result = await this.processContentWithAI(data, settings);
 
             // 在发布前再次检查任务是否被取消
             if (await this.isTaskCancelled(tabId, taskId)) {
-                console.log('检测到任务已被取消，不发布结果');
                 return;
             }
 
-            console.log('AI处理完成，开始发布到墨问...');
-
             // 更新任务状态为完成
             await this.updateTaskStatus(tabId, taskId, 'completed', '任务已完成', result);
-            console.log('任务处理完成，状态已更新为completed');
-
         } catch (error) {
             console.error('处理内容失败:', error);
 
             // 检查是否是因为任务被取消导致的错误
             if (await this.isTaskCancelled(tabId, taskId)) {
-                console.log('任务已被取消，不更新错误状态');
                 return;
             }
 
             // 更新任务状态为失败
             await this.updateTaskStatus(tabId, taskId, 'failed', '任务处理失败', null, error.message);
-            console.log('任务处理失败，状态已更新为failed');
         }
     }
 
@@ -243,8 +221,6 @@ class MowenNoteHelper {
      */
     async updateTaskStatus(tabId, taskId, status, progressText, result = null, error = null) {
         const taskKey = `task_${tabId}`;
-
-        console.log(`更新任务状态: ${status}, 任务ID: ${taskId}, 标签页ID: ${tabId}, 进度: ${progressText}`);
 
         try {
             const taskData = {
@@ -256,12 +232,10 @@ class MowenNoteHelper {
 
             if (result) {
                 taskData.result = result;
-                console.log('任务结果已附加');
             }
 
             if (error) {
                 taskData.error = error;
-                console.log(`任务错误: ${error}`);
             }
 
             await new Promise((resolve) => {
@@ -269,8 +243,6 @@ class MowenNoteHelper {
                     [taskKey]: taskData
                 }, resolve);
             });
-
-            console.log(`任务状态已保存到storage: ${taskKey}`);
 
             // 发送通知
             if (status === 'completed') {
@@ -468,11 +440,56 @@ class MowenNoteHelper {
         const content = result.choices[0].message.content;
 
         try {
+            // 尝试解析原始内容
             return JSON.parse(content);
         } catch (error) {
-            console.error('AI返回内容解析失败:', content);
-            throw new Error('AI返回的内容格式不正确');
+            // 如果解析失败，尝试处理Markdown格式的JSON
+            try {
+                const cleanedContent = this.extractJSONFromMarkdown(content);
+                return JSON.parse(cleanedContent);
+            } catch (secondError) {
+                console.error('AI返回内容解析失败:', content);
+                console.error('原始错误:', error.message);
+                console.error('清理后错误:', secondError.message);
+                throw new Error('AI返回的内容格式不正确');
+            }
         }
+    }
+
+    /**
+     * 从Markdown格式中提取JSON内容
+     * @param {string} content - 可能包含Markdown格式的内容
+     * @returns {string} 清理后的JSON字符串
+     */
+    extractJSONFromMarkdown(content) {
+        // 移除可能的Markdown代码块标记
+        let cleaned = content.trim();
+
+        // 处理 ```json 开头和 ``` 结尾的情况
+        if (cleaned.startsWith('```json')) {
+            cleaned = cleaned.replace(/^```json\s*/, '');
+        } else if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```\s*/, '');
+        }
+
+        // 移除结尾的 ```
+        if (cleaned.endsWith('```')) {
+            cleaned = cleaned.replace(/\s*```$/, '');
+        }
+
+        // 移除可能的其他Markdown格式
+        cleaned = cleaned.replace(/^`+|`+$/g, '');
+
+        // 移除可能存在的其他文字说明
+        // 寻找第一个 { 和最后一个 }
+        const firstBrace = cleaned.indexOf('{');
+        const lastBrace = cleaned.lastIndexOf('}');
+
+        if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+        }
+
+        return cleaned.trim();
     }
 
     /**
@@ -815,13 +832,11 @@ ${tagsNote}
             const taskData = result[taskKey];
             // 如果任务数据不存在，说明可能被取消了
             if (!taskData) {
-                console.log(`任务数据不存在，可能已被取消: ${taskKey}`);
                 return true;
             }
 
             // 检查任务ID是否匹配（防止任务ID冲突）
             if (taskData.taskId !== taskId) {
-                console.log(`任务ID不匹配，可能已被取消: 当前=${taskId}, 存储=${taskData.taskId}`);
                 return true;
             }
 

@@ -14,7 +14,6 @@ body {
     background: #f5f7fa;
 }
 
-
 /* 容器 */
 
 .container {
@@ -24,7 +23,6 @@ body {
     min-height: 100vh;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
-
 
 /* 头部 */
 
@@ -53,20 +51,17 @@ body {
     margin: 0;
 }
 
-
 /* 主要内容 */
 
 .main {
     padding: 32px;
 }
 
-
 /* 配置表单 */
 
 .config-form {
     margin-bottom: 40px;
 }
-
 
 /* 配置区块 */
 
@@ -93,7 +88,6 @@ body {
 .section-title svg {
     color: #667eea;
 }
-
 
 /* 表单组 */
 
@@ -151,7 +145,6 @@ body {
     text-decoration: underline;
 }
 
-
 /* 密码输入框样式 */
 
 .password-input-wrapper {
@@ -203,13 +196,11 @@ body {
     transition: opacity 0.2s ease;
 }
 
-
 /* 确保眼睛图标不影响输入框的焦点样式，保持与原来输入框一致 */
 
 .password-input-wrapper:focus-within .password-toggle {
     color: #667eea;
 }
-
 
 /* 复选框样式 */
 
@@ -252,7 +243,6 @@ body {
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
 }
-
 
 /* 表单操作按钮 */
 
@@ -319,7 +309,6 @@ body {
     box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
 
-
 /* 状态显示 */
 
 .status {
@@ -354,7 +343,6 @@ body {
     color: #856404;
     border-color: #ffc107;
 }
-
 
 /* 帮助区块 */
 
@@ -392,7 +380,6 @@ body {
     color: #6c757d;
     line-height: 1.5;
 }
-
 
 /* 底部 */
 
@@ -432,7 +419,6 @@ body {
     text-decoration: underline;
 }
 
-
 /* 响应式设计 */
 
 @media (max-width: 768px) {
@@ -464,7 +450,6 @@ body {
     }
 }
 
-
 /* 加载动画 */
 
 .loading {
@@ -486,7 +471,6 @@ body {
     }
 }
 
-
 /* 淡入动画 */
 
 .fade-in {
@@ -503,7 +487,6 @@ body {
         transform: translateY(0);
     }
 }
-
 
 /* 工具提示 */
 

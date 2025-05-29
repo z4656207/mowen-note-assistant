@@ -23,7 +23,6 @@ body {
     overflow-x: hidden;
 }
 
-
 /* 容器 */
 
 .container {
@@ -37,7 +36,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
 
 /* 头部 */
 
@@ -88,7 +86,6 @@ body {
     justify-content: center;
 }
 
-
 /* 让切换按钮更小更不显眼 */
 
 .toggle-mode-btn {
@@ -111,7 +108,6 @@ body {
     background: rgba(255, 255, 255, 0.25);
 }
 
-
 /* 主要内容 */
 
 .main {
@@ -120,7 +116,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
 
 /* 页面信息 */
 
@@ -135,7 +130,6 @@ body {
     justify-content: center;
     width: 100%;
 }
-
 
 /* 发布设置 */
 
@@ -208,7 +202,6 @@ body {
     margin-top: 8px;
     margin-left: 56px;
 }
-
 
 /* 自定义提示词设置 */
 
@@ -305,7 +298,6 @@ body {
     word-break: break-all;
 }
 
-
 /* 操作按钮 */
 
 .actions {
@@ -379,7 +371,6 @@ body {
     box-shadow: none;
 }
 
-
 /* 状态显示 */
 
 .status {
@@ -417,7 +408,6 @@ body {
     border: 1px solid #ffcc02;
     display: block;
 }
-
 
 /* 进度指示器 */
 
@@ -458,7 +448,6 @@ body {
     color: #666;
     text-align: center;
 }
-
 
 /* 结果显示 */
 
@@ -529,7 +518,6 @@ body {
     margin: 8px 0;
 }
 
-
 /* 自定义滚动条样式 */
 
 .result-content::-webkit-scrollbar {
@@ -549,7 +537,6 @@ body {
 .result-content::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
-
 
 /* 底部 */
 
@@ -578,7 +565,6 @@ body {
     color: #667eea;
 }
 
-
 /* 响应式调整 */
 
 @media (max-width: 420px) {
@@ -603,7 +589,6 @@ body {
     }
 }
 
-
 /* 加载动画 */
 
 .loading {
@@ -624,7 +609,6 @@ body {
         transform: rotate(360deg);
     }
 }
-
 
 /* 工具提示 */
 
@@ -655,7 +639,6 @@ body {
     visibility: visible;
     opacity: 1;
 }
-
 
 /* 自定义帮助弹框样式 */
 
@@ -804,7 +787,6 @@ body {
     font-size: 13px;
     color: #2d3748;
 }
-
 
 /* 响应式调整 */
 

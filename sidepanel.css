@@ -24,7 +24,6 @@ body {
     background: white;
 }
 
-
 /* 头部样式 */
 
 .header {
@@ -75,7 +74,6 @@ body {
     justify-content: center;
 }
 
-
 /* 让切换按钮更小更不显眼 */
 
 .toggle-mode-btn {
@@ -98,7 +96,6 @@ body {
     background: rgba(255, 255, 255, 0.25);
 }
 
-
 /* 主要内容区域 */
 
 .main {
@@ -109,7 +106,6 @@ body {
     flex-direction: column;
     gap: 20px;
 }
-
 
 /* 模式指示器 */
 
@@ -136,7 +132,6 @@ body {
     color: #6c757d;
 }
 
-
 /* 页面信息 */
 
 .page-info {
@@ -160,7 +155,6 @@ body {
     word-break: break-all;
     line-height: 1.3;
 }
-
 
 /* 发布设置 */
 
@@ -233,7 +227,6 @@ body {
     margin-top: 4px;
     margin-left: 56px;
 }
-
 
 /* 自定义提示词设置 */
 
@@ -314,7 +307,6 @@ body {
     color: #f56565;
 }
 
-
 /* 操作按钮 */
 
 .actions {
@@ -383,7 +375,6 @@ body {
     box-shadow: none !important;
 }
 
-
 /* 状态显示 */
 
 .status {
@@ -418,7 +409,6 @@ body {
     color: #0c5460;
     border: 1px solid #bee5eb;
 }
-
 
 /* 进度指示器 */
 
@@ -463,7 +453,6 @@ body {
     color: #6c757d;
     font-weight: 500;
 }
-
 
 /* 结果显示 */
 
@@ -513,7 +502,6 @@ body {
     line-height: 1.6;
 }
 
-
 /* 底部 */
 
 .footer {
@@ -539,7 +527,6 @@ body {
 .footer-links a:hover {
     color: #5e72e4;
 }
-
 
 /* 响应式设计 */
 
@@ -567,7 +554,6 @@ body {
     }
 }
 
-
 /* 滚动条样式 */
 
 ::-webkit-scrollbar {
@@ -588,7 +574,6 @@ body {
     background: #a8a8a8;
 }
 
-
 /* 动画效果 */
 
 .container>* {
@@ -605,7 +590,6 @@ body {
         transform: translateY(0);
     }
 }
-
 
 /* 自定义帮助弹框样式 */
 
@@ -754,7 +738,6 @@ body {
     font-size: 13px;
     color: #2d3748;
 }
-
 
 /* 响应式调整 */
 

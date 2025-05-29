@@ -1,39 +1,45 @@
 {
-    "manifest_version": 3,
-    "name": "墨问笔记助手",
-    "version": "1.0.0",
-    "description": "智能整理网页内容并发布到墨问笔记",
-    "permissions": [
-        "activeTab",
-        "storage",
-        "scripting",
-        "notifications",
-        "sidePanel",
-        "windows"
-    ],
-    "host_permissions": [
-        "http://*/*",
-        "https://*/*"
-    ],
-    "background": {
-        "service_worker": "background.js"
-    },
-    "content_scripts": [{
-        "matches": ["<all_urls>"],
-        "js": ["content.js"],
-        "run_at": "document_end",
-        "all_frames": false
-    }],
-    "action": {
-        "default_title": "墨问笔记助手"
-    },
-    "side_panel": {
-        "default_path": "sidepanel.html"
-    },
-    "options_page": "options.html",
-    "icons": {
-        "16": "icons/icon16.png",
-        "48": "icons/icon48.png",
-        "128": "icons/icon128.png"
+  "manifest_version": 3,
+  "name": "墨问笔记助手",
+  "version": "1.0.0",
+  "description": "智能整理网页内容并发布到墨问笔记",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "notifications",
+    "sidePanel",
+    "windows"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": false
     }
+  ],
+  "action": {
+    "default_title": "墨问笔记助手"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }

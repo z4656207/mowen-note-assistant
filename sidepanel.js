@@ -37,8 +37,6 @@ class SidePanelController {
      * 初始化侧边栏特有功能
      */
     initSidePanelFeatures() {
-        console.log('侧边栏模式已启用');
-
         // 添加标签页切换监听
         this.setupTabChangeListener();
 
@@ -53,22 +51,132 @@ class SidePanelController {
      * 设置标签页切换监听器
      */
     setupTabChangeListener() {
-        // 存储当前标签页ID
+        // 存储当前标签页ID和URL
         this.currentTabId = null;
+        this.currentTabUrl = null;
 
-        // 定期检查当前活动标签页是否改变
+        // 定期检查当前活动标签页和URL是否改变
         this.tabCheckInterval = setInterval(async() => {
             try {
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                if (tab && tab.id !== this.currentTabId) {
-                    console.log(`检测到标签页切换: ${this.currentTabId} -> ${tab.id}`);
-                    await this.handleTabChange(tab);
+                if (!tab) return;
+
+                // 检查标签页ID或URL是否发生变化
+                const tabChanged = tab.id !== this.currentTabId;
+                const urlChanged = tab.url !== this.currentTabUrl;
+
+                if (tabChanged || urlChanged) {
+                    // 如果只是URL变化（同一标签页内导航），使用轻量级更新
+                    if (!tabChanged && urlChanged) {
+                        await this.handleUrlChange(tab);
+                    } else {
+                        // 标签页切换，使用完整的处理流程
+                        await this.handleTabChange(tab);
+                    }
+
+                    // 更新记录的标签页信息
                     this.currentTabId = tab.id;
+                    this.currentTabUrl = tab.url;
                 }
             } catch (error) {
                 console.error('检查标签页切换失败:', error);
             }
-        }, 1000); // 每秒检查一次
+        }, 500); // 提高检查频率到500ms，更快响应URL变化
+    }
+
+    /**
+     * 处理URL变化（同一标签页内导航）
+     */
+    async handleUrlChange(tab) {
+        try {
+            // 如果有正在进行的任务，保持任务状态但清理页面数据缓存
+            if (this.isTaskRunning) {
+                // 清理页面数据缓存，但保留任务状态
+                this.currentPageData = null;
+
+                // 更新页面信息显示但不重置任务
+                await this.updatePageInfoOnly(tab);
+
+                this.showStatus('页面已导航，任务继续在后台进行', 'info');
+                return;
+            }
+
+            // 没有运行中的任务，正常更新页面信息
+            await this.updatePageInfoOnly(tab);
+
+        } catch (error) {
+            console.error('处理URL变化失败:', error);
+            this.showStatus('页面信息更新失败: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 仅更新页面信息显示（不重置任务状态）
+     */
+    async updatePageInfoOnly(tab) {
+        try {
+            // 清理旧的页面数据缓存
+            this.currentPageData = null;
+
+            // 清理可能存在的帮助信息
+            this.clearPageTypeHelp();
+
+            // 更新页面标题和URL显示
+            const pageTitle = document.getElementById('pageTitle');
+            const pageUrl = document.getElementById('pageUrl');
+
+            if (pageTitle) pageTitle.textContent = tab.title || '正在加载...';
+            if (pageUrl) pageUrl.textContent = tab.url || '';
+
+            // 检查是否可以在当前页面注入脚本
+            if (!this.canInjectScript(tab.url)) {
+                this.showStatus('当前页面不支持内容提取', 'warning');
+                const extractBtn = document.getElementById('extractBtn');
+                if (extractBtn && !this.isTaskRunning) {
+                    extractBtn.disabled = true;
+                    extractBtn.title = '当前页面不支持内容提取';
+                }
+                this.showPageTypeHelp(tab.url);
+                return;
+            }
+
+            // 页面支持内容提取，重新启用提取按钮（如果没有任务在运行）
+            if (!this.isTaskRunning) {
+                const extractBtn = document.getElementById('extractBtn');
+                if (extractBtn) {
+                    // 只有在配置完整的情况下才启用按钮
+                    const config = await this.getStoredConfig();
+                    if (this.validateConfig(config)) {
+                        extractBtn.disabled = false;
+                        extractBtn.title = '';
+                    }
+                }
+            }
+
+            // 后台异步提取页面内容，不阻塞UI更新
+            this.extractPageContentInBackground(tab.id);
+
+        } catch (error) {
+            console.error('更新页面信息失败:', error);
+            this.showStatus('更新页面信息失败: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 后台异步提取页面内容
+     */
+    async extractPageContentInBackground(tabId) {
+        try {
+            // 延迟一点时间，让页面完全加载
+            setTimeout(async() => {
+                try {
+                    await this.extractPageContent(tabId);
+                } catch (error) {
+                    // 不显示错误状态，因为这是后台操作
+                }
+            }, 1000); // 1秒延迟，确保页面加载完成
+        } catch (error) {
+            }
     }
 
     /**
@@ -78,7 +186,6 @@ class SidePanelController {
         // 当侧边栏重新变为可见时，刷新页面信息
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                console.log('侧边栏重新可见，刷新页面信息');
                 this.refreshPageInfo();
             }
         });
@@ -88,14 +195,11 @@ class SidePanelController {
      * 处理标签页切换
      */
     async handleTabChange(newTab) {
-        console.log('处理标签页切换:', newTab.id, newTab.url);
-
         // 检查当前是否有正在进行的任务
         const hasRunningTask = this.isTaskRunning;
         const currentTaskId = this.taskId;
 
         if (hasRunningTask) {
-            console.log('检测到任务执行中的标签页切换，保留任务状态');
             // 显示任务保留提示
             this.showStatus('任务将在后台继续进行，切换回原标签页可查看进度', 'info');
 
@@ -139,8 +243,6 @@ class SidePanelController {
      * 重置侧边栏状态
      */
     resetSidePanelState() {
-        console.log('重置侧边栏状态');
-
         // 清理帮助信息
         this.clearPageTypeHelp();
 
@@ -197,7 +299,6 @@ class SidePanelController {
             // 检查是否有正在运行的任务
             await this.checkRunningTask();
 
-            console.log('页面信息刷新完成');
         } catch (error) {
             console.error('刷新页面信息失败:', error);
             this.showStatus('刷新页面信息失败: ' + error.message, 'error');
@@ -223,30 +324,23 @@ class SidePanelController {
      * 切换到弹窗模式
      */
     async toggleToPopupMode() {
-        console.log('toggleToPopupMode被调用');
         try {
             // 获取当前标签页
-            console.log('获取当前标签页...');
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (!tab) {
                 console.error('无法获取当前标签页');
                 this.showStatus('无法获取当前标签页', 'error');
                 return;
             }
-            console.log('当前标签页:', tab.id, tab.url);
-
             this.showStatus('正在切换到弹窗模式...', 'info');
 
             // 直接在用户手势同步上下文中操作，避免通过background script
             // 1. 设置popup
             await chrome.action.setPopup({ popup: 'popup.html' });
-            console.log('popup已设置');
-
             // 2. 立即打开popup（在用户手势上下文中）
             try {
                 if (chrome.action.openPopup) {
                     await chrome.action.openPopup();
-                    console.log('通过openPopup API打开popup成功');
                 } else {
                     // 备用方案：创建popup窗口
                     const popupWindow = await chrome.windows.create({
@@ -256,12 +350,9 @@ class SidePanelController {
                         height: 600,
                         focused: true
                     });
-                    console.log('通过windows API创建popup窗口成功:', popupWindow.id);
                 }
 
                 this.showStatus('已切换到弹窗模式', 'success');
-                console.log('切换成功，popup应该已经打开');
-
                 // 注意：侧边栏可能不会自动关闭，这是Chrome的行为
                 // 用户可能需要手动关闭侧边栏或者重新点击扩展图标
 
@@ -294,7 +385,6 @@ class SidePanelController {
                 const extractBtn = document.getElementById('extractBtn');
 
                 if (autoPublishToggle && fullTextModeToggle && generateTagsToggle && extractBtnText && extractBtn) {
-                    console.log('DOM元素准备就绪');
                     resolve();
                 } else {
                     attempts++;
@@ -320,9 +410,7 @@ class SidePanelController {
             extractBtn.addEventListener('click', () => {
                 this.handleExtractAndPublish();
             });
-        } else {
-            console.warn('extractBtn元素未找到');
-        }
+        } else {}
 
         // 设置按钮
         const settingsBtn = document.getElementById('settingsBtn');
@@ -330,21 +418,15 @@ class SidePanelController {
             settingsBtn.addEventListener('click', () => {
                 chrome.runtime.openOptionsPage();
             });
-        } else {
-            console.warn('settingsBtn元素未找到');
-        }
+        } else {}
 
         // 模式切换按钮
         const toggleModeBtn = document.getElementById('toggleModeBtn');
         if (toggleModeBtn) {
-            console.log('找到toggleModeBtn，绑定点击事件');
             toggleModeBtn.addEventListener('click', () => {
-                console.log('toggleModeBtn被点击');
                 this.toggleToPopupMode();
             });
-        } else {
-            console.warn('toggleModeBtn元素未找到');
-        }
+        } else {}
 
         // 关闭结果按钮
         const closeResult = document.getElementById('closeResult');
@@ -416,7 +498,6 @@ class SidePanelController {
             });
         }
 
-        console.log('事件监听器绑定完成');
     }
 
     // 其他方法直接复制自popup.js，确保功能一致
@@ -431,8 +512,9 @@ class SidePanelController {
                 return;
             }
 
-            // 记录当前标签页ID
+            // 记录当前标签页ID和URL
             this.currentTabId = tab.id;
+            this.currentTabUrl = tab.url;
 
             if (!this.canInjectScript(tab.url)) {
                 this.showStatus('当前页面不支持内容提取', 'warning');
@@ -471,9 +553,7 @@ class SidePanelController {
      */
     clearPageTypeHelp() {
         const existingHelpElements = document.querySelectorAll('.help-message');
-        console.log(`[侧边栏] 清理帮助信息: 找到 ${existingHelpElements.length} 个帮助元素`);
         existingHelpElements.forEach((element, index) => {
-            console.log(`[侧边栏] 移除帮助元素 ${index + 1}:`, element);
             element.remove();
         });
     }
@@ -516,24 +596,16 @@ class SidePanelController {
         const maxRetries = 3;
 
         try {
-            console.log(`开始提取页面内容，标签页ID: ${tabId}, 重试次数: ${retryCount}`);
             const isReady = await this.checkContentScriptReady(tabId);
-            console.log(`内容脚本准备状态: ${isReady}`);
-
             if (!isReady) {
-                console.log('内容脚本未准备好，尝试手动注入...');
                 try {
                     await chrome.scripting.executeScript({
                         target: { tabId: tabId },
                         files: ['content.js']
                     });
-                    console.log('手动注入内容脚本成功');
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     const isReadyAfterInject = await this.checkContentScriptReady(tabId);
-                    console.log(`注入后内容脚本准备状态: ${isReadyAfterInject}`);
-
                     if (!isReadyAfterInject && retryCount < maxRetries) {
-                        console.log('注入后仍未准备好，重试...');
                         setTimeout(() => {
                             this.extractPageContent(tabId, retryCount + 1);
                         }, 1000);
@@ -553,11 +625,7 @@ class SidePanelController {
                 }
             }
 
-            console.log('发送extractContent消息...');
             chrome.tabs.sendMessage(tabId, { action: 'extractContent' }, (response) => {
-                console.log('收到响应:', response);
-                console.log('chrome.runtime.lastError:', chrome.runtime.lastError);
-
                 if (chrome.runtime.lastError) {
                     const errorMsg = chrome.runtime.lastError.message || chrome.runtime.lastError.toString();
                     console.error('发送消息失败:', errorMsg);
@@ -565,12 +633,10 @@ class SidePanelController {
                     if ((errorMsg.includes('Could not establish connection') ||
                             errorMsg.includes('Receiving end does not exist')) &&
                         retryCount < maxRetries) {
-                        console.log(`连接错误，重试 (${retryCount + 1}/${maxRetries})`);
                         setTimeout(() => {
                             this.extractPageContent(tabId, retryCount + 1);
                         }, 1000);
                     } else if (retryCount < maxRetries) {
-                        console.log(`重试提取内容 (${retryCount + 1}/${maxRetries})`);
                         setTimeout(() => {
                             this.extractPageContent(tabId, retryCount + 1);
                         }, 1000);
@@ -581,7 +647,6 @@ class SidePanelController {
                 }
 
                 if (response && response.success) {
-                    console.log('页面内容提取成功:', response.data);
                     this.currentPageData = response.data;
                     this.showStatus('页面内容已准备就绪', 'success');
                 } else {
@@ -594,7 +659,6 @@ class SidePanelController {
         } catch (error) {
             console.error('extractPageContent异常:', error);
             if (retryCount < maxRetries) {
-                console.log(`提取内容失败，重试 (${retryCount + 1}/${maxRetries}):`, error);
                 setTimeout(() => {
                     this.extractPageContent(tabId, retryCount + 1);
                 }, 1000);
@@ -606,9 +670,7 @@ class SidePanelController {
 
     async checkContentScriptReady(tabId) {
         return new Promise((resolve) => {
-            console.log('检查内容脚本是否准备好...');
             const timeout = setTimeout(() => {
-                console.log('检查内容脚本超时');
                 resolve(false);
             }, 2000);
 
@@ -616,14 +678,10 @@ class SidePanelController {
                 clearTimeout(timeout);
                 if (chrome.runtime.lastError) {
                     const error = chrome.runtime.lastError.message;
-                    console.log('内容脚本未准备好:', error);
                     if (error.includes('Could not establish connection') ||
-                        error.includes('Receiving end does not exist')) {
-                        console.log('检测到连接错误，内容脚本可能未加载');
-                    }
+                        error.includes('Receiving end does not exist')) {}
                     resolve(false);
                 } else {
-                    console.log('内容脚本已准备好:', response);
                     resolve(true);
                 }
             });
@@ -1031,11 +1089,6 @@ class SidePanelController {
     }
 
     async handleExtractAndPublish() {
-        if (!this.currentPageData) {
-            this.showStatus('页面内容未准备就绪，请稍后重试', 'error');
-            return;
-        }
-
         // 如果任务正在进行，阻止重复提交
         if (this.isTaskRunning) {
             this.showStatus('任务正在进行中，请稍候...', 'warning');
@@ -1048,6 +1101,34 @@ class SidePanelController {
             if (!tab) {
                 this.showStatus('无法获取当前标签页', 'error');
                 return;
+            }
+
+            // 检查是否可以在当前页面注入脚本
+            if (!this.canInjectScript(tab.url)) {
+                this.showStatus('当前页面不支持内容提取', 'error');
+                return;
+            }
+
+            // 显示正在提取页面内容的提示
+            this.showStatus('正在重新获取页面内容...', 'info');
+
+            // 强制重新提取当前页面内容，确保获取最新数据
+            await this.forceRefreshPageContent(tab.id);
+
+            // 验证页面内容是否成功获取
+            if (!this.currentPageData) {
+                this.showStatus('无法获取页面内容，请刷新页面后重试', 'error');
+                return;
+            }
+
+            // 验证页面内容是否匹配当前标签页
+            if (this.currentPageData.url && this.currentPageData.url !== tab.url) {
+                await this.forceRefreshPageContent(tab.id);
+
+                if (!this.currentPageData || this.currentPageData.url !== tab.url) {
+                    this.showStatus('页面内容获取异常，请重试', 'error');
+                    return;
+                }
             }
 
             // 获取当前设置
@@ -1089,12 +1170,19 @@ class SidePanelController {
                 extractBtn.disabled = true;
             }
 
+            // 添加页面内容时间戳，用于调试
+            const contentWithTimestamp = {
+                ...this.currentPageData,
+                extractTime: Date.now(),
+                tabId: tab.id
+            };
+
             // 发送到后台脚本处理
             chrome.runtime.sendMessage({
                 action: 'processContent',
                 taskId: this.taskId,
                 tabId: tab.id,
-                data: this.currentPageData,
+                data: contentWithTimestamp,
                 settings: {
                     autoPublish: autoPublish,
                     fullTextMode: fullTextMode,
@@ -1117,6 +1205,79 @@ class SidePanelController {
         }
     }
 
+    /**
+     * 强制刷新页面内容
+     * @param {number} tabId - 标签页ID
+     * @returns {Promise<void>}
+     */
+    async forceRefreshPageContent(tabId) {
+        try {
+            // 清除现有缓存的页面数据
+            this.currentPageData = null;
+
+            // 重新提取页面内容，使用更短的超时时间
+            await this.extractPageContentSync(tabId);
+
+        } catch (error) {
+            console.error('强制刷新页面内容失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 同步方式提取页面内容
+     * @param {number} tabId - 标签页ID
+     * @returns {Promise<void>}
+     */
+    async extractPageContentSync(tabId) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // 设置超时
+                const timeout = setTimeout(() => {
+                    reject(new Error('页面内容提取超时'));
+                }, 5000);
+
+                // 检查content script是否准备就绪
+                const isReady = await this.checkContentScriptReady(tabId);
+                if (!isReady) {
+                    try {
+                        await chrome.scripting.executeScript({
+                            target: { tabId: tabId },
+                            files: ['content.js']
+                        });
+                        // 给脚本一点时间初始化
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } catch (injectError) {
+                        clearTimeout(timeout);
+                        reject(new Error('无法注入内容脚本: ' + injectError.message));
+                        return;
+                    }
+                }
+
+                // 发送消息获取内容
+                chrome.tabs.sendMessage(tabId, { action: 'extractContent' }, (response) => {
+                    clearTimeout(timeout);
+
+                    if (chrome.runtime.lastError) {
+                        reject(new Error('获取页面内容失败: ' + chrome.runtime.lastError.message));
+                        return;
+                    }
+
+                    if (response && response.success) {
+                        this.currentPageData = response.data;
+                        resolve();
+                    } else {
+                        const errorMsg = response ? (response.error || '未知错误') : '无响应';
+                        reject(new Error('提取页面内容失败: ' + errorMsg));
+                    }
+                });
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
     async handleTaskError(errorMessage, tabId = null) {
         this.isTaskRunning = false;
         this.hideProgress();
@@ -1136,8 +1297,6 @@ class SidePanelController {
     }
 
     startTaskPolling(tabId, initialTaskAge = 0) {
-        console.log(`开始轮询任务状态，标签页ID: ${tabId}`);
-
         const POLLING_TIMEOUT = 10 * 60 * 1000; // 10分钟轮询超时
         const startTime = Date.now();
         let pollCount = 0;
@@ -1148,7 +1307,7 @@ class SidePanelController {
                 const elapsedTime = Date.now() - startTime + initialTaskAge;
 
                 if (elapsedTime > POLLING_TIMEOUT) {
-                    console.log(`轮询超时 (${Math.round(elapsedTime / 1000)}秒)，强制停止`);
+                    }秒)，强制停止`);
                     clearInterval(pollInterval);
                     await this.handlePollingTimeout();
                     return;
@@ -1162,21 +1321,16 @@ class SidePanelController {
                 const taskData = result[taskKey];
 
                 if (!taskData) {
-                    console.log('任务数据不存在，停止轮询');
                     clearInterval(pollInterval);
                     this.handleTaskDataMissing();
                     return;
                 }
 
-                console.log(`轮询检查 #${pollCount}: 状态=${taskData.status}`);
-
                 if (taskData.status === 'completed') {
-                    console.log('任务已完成，处理结果');
                     clearInterval(pollInterval);
                     this.handleTaskCompleted(taskData);
                     chrome.storage.local.remove([taskKey]);
                 } else if (taskData.status === 'failed') {
-                    console.log('任务失败，处理错误');
                     clearInterval(pollInterval);
                     this.handleTaskFailed(taskData);
                     chrome.storage.local.remove([taskKey]);
@@ -1257,8 +1411,6 @@ class SidePanelController {
         const confirmed = confirm('确定要取消当前任务吗？');
         if (!confirmed) return;
 
-        console.log('用户确认取消任务，开始清理...');
-
         if (this.currentPollInterval) {
             clearInterval(this.currentPollInterval);
             this.currentPollInterval = null;
@@ -1299,7 +1451,6 @@ class SidePanelController {
             const TASK_TIMEOUT = 5 * 60 * 1000;
 
             if (taskAge > TASK_TIMEOUT) {
-                console.log('任务已超时，自动清理');
                 chrome.storage.local.remove([taskKey]);
                 this.showStatus('检测到超时任务已自动清理', 'warning');
                 return;
@@ -1339,14 +1490,12 @@ class SidePanelController {
             });
         }
 
-        console.log('强制重置功能已添加 (三击页面标题)');
-    }
+        // 添加调试信息（开发用）
+        }
 
     async forceReset() {
         const confirmed = confirm('强制重置将清除所有任务状态，确定继续吗？');
         if (!confirmed) return;
-
-        console.log('开始强制重置...');
 
         if (this.currentPollInterval) {
             clearInterval(this.currentPollInterval);
@@ -1376,11 +1525,9 @@ class SidePanelController {
             await new Promise((resolve) => {
                 chrome.storage.local.remove(taskKeys, resolve);
             });
-            console.log(`已清除 ${taskKeys.length} 个任务状态`);
-        }
+            }
 
         this.showStatus('状态已强制重置，可以重新开始操作', 'success');
-        console.log('强制重置完成');
     }
 
     // 添加页面卸载清理

@@ -46,7 +46,6 @@ class PopupController {
                 const extractBtn = document.getElementById('extractBtn');
 
                 if (autoPublishToggle && fullTextModeToggle && generateTagsToggle && extractBtnText && extractBtn) {
-                    console.log('DOM元素准备就绪');
                     resolve();
                 } else {
                     attempts++;
@@ -199,9 +198,7 @@ class PopupController {
      */
     clearPageTypeHelp() {
         const existingHelpElements = document.querySelectorAll('.help-message');
-        console.log(`清理帮助信息: 找到 ${existingHelpElements.length} 个帮助元素`);
         existingHelpElements.forEach((element, index) => {
-            console.log(`移除帮助元素 ${index + 1}:`, element);
             element.remove();
         });
     }
@@ -250,31 +247,21 @@ class PopupController {
         const maxRetries = 3;
 
         try {
-            console.log(`开始提取页面内容，标签页ID: ${tabId}, 重试次数: ${retryCount}`);
-
             // 首先检查内容脚本是否已准备好
             const isReady = await this.checkContentScriptReady(tabId);
-            console.log(`内容脚本准备状态: ${isReady}`);
-
             // 如果内容脚本未准备好，尝试手动注入
             if (!isReady) {
-                console.log('内容脚本未准备好，尝试手动注入...');
                 try {
                     await chrome.scripting.executeScript({
                         target: { tabId: tabId },
                         files: ['content.js']
                     });
-                    console.log('手动注入内容脚本成功');
-
                     // 等待脚本初始化
                     await new Promise(resolve => setTimeout(resolve, 1000));
 
                     // 再次检查是否准备好
                     const isReadyAfterInject = await this.checkContentScriptReady(tabId);
-                    console.log(`注入后内容脚本准备状态: ${isReadyAfterInject}`);
-
                     if (!isReadyAfterInject && retryCount < maxRetries) {
-                        console.log('注入后仍未准备好，重试...');
                         setTimeout(() => {
                             this.extractPageContent(tabId, retryCount + 1);
                         }, 1000);
@@ -295,11 +282,7 @@ class PopupController {
             }
 
             // 发送消息提取内容
-            console.log('发送extractContent消息...');
             chrome.tabs.sendMessage(tabId, { action: 'extractContent' }, (response) => {
-                console.log('收到响应:', response);
-                console.log('chrome.runtime.lastError:', chrome.runtime.lastError);
-
                 if (chrome.runtime.lastError) {
                     const errorMsg = chrome.runtime.lastError.message || chrome.runtime.lastError.toString();
                     console.error('发送消息失败:', errorMsg);
@@ -308,12 +291,10 @@ class PopupController {
                     if ((errorMsg.includes('Could not establish connection') ||
                             errorMsg.includes('Receiving end does not exist')) &&
                         retryCount < maxRetries) {
-                        console.log(`连接错误，重试 (${retryCount + 1}/${maxRetries})`);
                         setTimeout(() => {
                             this.extractPageContent(tabId, retryCount + 1);
                         }, 1000);
                     } else if (retryCount < maxRetries) {
-                        console.log(`重试提取内容 (${retryCount + 1}/${maxRetries})`);
                         setTimeout(() => {
                             this.extractPageContent(tabId, retryCount + 1);
                         }, 1000);
@@ -324,7 +305,6 @@ class PopupController {
                 }
 
                 if (response && response.success) {
-                    console.log('页面内容提取成功:', response.data);
                     this.currentPageData = response.data;
                     this.showStatus('页面内容已准备就绪', 'success');
                 } else {
@@ -337,7 +317,6 @@ class PopupController {
         } catch (error) {
             console.error('extractPageContent异常:', error);
             if (retryCount < maxRetries) {
-                console.log(`提取内容失败，重试 (${retryCount + 1}/${maxRetries}):`, error);
                 setTimeout(() => {
                     this.extractPageContent(tabId, retryCount + 1);
                 }, 1000);
@@ -352,11 +331,8 @@ class PopupController {
      */
     async checkContentScriptReady(tabId) {
         return new Promise((resolve) => {
-            console.log('检查内容脚本是否准备好...');
-
             // 设置超时
             const timeout = setTimeout(() => {
-                console.log('检查内容脚本超时');
                 resolve(false);
             }, 2000);
 
@@ -365,17 +341,12 @@ class PopupController {
 
                 if (chrome.runtime.lastError) {
                     const error = chrome.runtime.lastError.message;
-                    console.log('内容脚本未准备好:', error);
-
                     // 特殊处理连接错误
                     if (error.includes('Could not establish connection') ||
-                        error.includes('Receiving end does not exist')) {
-                        console.log('检测到连接错误，内容脚本可能未加载');
-                    }
+                        error.includes('Receiving end does not exist')) {}
 
                     resolve(false);
                 } else {
-                    console.log('内容脚本已准备好:', response);
                     resolve(true);
                 }
             });
@@ -493,31 +464,23 @@ class PopupController {
             if (autoPublishToggle) {
                 // 设置开关状态，默认为true
                 autoPublishToggle.checked = settings.autoPublish !== false;
-            } else {
-                console.warn('autoPublishToggle元素未找到');
-            }
+            } else {}
 
             if (fullTextModeToggle) {
                 // 设置全文整理模式开关状态，默认为false（即总结模式）
                 fullTextModeToggle.checked = settings.fullTextMode === true;
-            } else {
-                console.warn('fullTextModeToggle元素未找到');
-            }
+            } else {}
 
             if (generateTagsToggle) {
                 // 设置生成标签开关状态，默认为false（即不生成标签）
                 generateTagsToggle.checked = settings.generateTags === true;
-            } else {
-                console.warn('generateTagsToggle元素未找到');
-            }
+            } else {}
 
             if (customPromptInput) {
                 // 加载自定义提示词
                 customPromptInput.value = await this.loadCustomPrompt();
                 this.updateCharCount(customPromptInput.value);
-            } else {
-                console.warn('customPromptInput元素未找到');
-            }
+            } else {}
 
             // 更新按钮文本
             this.updateButtonText();
@@ -577,9 +540,7 @@ class PopupController {
 
             // 保存设置
             this.savePublishSettings(autoPublish, fullTextMode, generateTags);
-        } else {
-            console.warn('按钮文本更新失败：元素未找到');
-        }
+        } else {}
     }
 
     /**
@@ -882,8 +843,6 @@ class PopupController {
                 return;
             }
 
-            console.log('准备切换到侧边栏模式，标签页ID:', tab.id);
-
             // 直接在用户手势同步上下文中操作，避免通过background script
             // 1. 先清除popup设置
             await chrome.action.setPopup({ popup: '' });
@@ -891,8 +850,6 @@ class PopupController {
             // 2. 立即在同步上下文中打开侧边栏
             if (chrome.sidePanel) {
                 await chrome.sidePanel.open({ tabId: tab.id });
-                console.log('侧边栏已打开，popup即将关闭');
-
                 // 3. 关闭当前popup窗口
                 window.close();
             } else {
@@ -1223,18 +1180,14 @@ class PopupController {
 
             // 如果没有任务数据，直接返回
             if (!taskData) {
-                console.log('没有找到正在进行的任务');
                 return;
             }
-
-            console.log('检查到任务数据:', taskData);
 
             // 检查任务是否超时（超过5分钟自动清理）
             const taskAge = Date.now() - (taskData.startTime || taskData.updateTime || 0);
             const TASK_TIMEOUT = 5 * 60 * 1000; // 5分钟
 
             if (taskAge > TASK_TIMEOUT) {
-                console.log(`任务已超时 (${Math.round(taskAge / 1000)}秒)，自动清理`);
                 await this.clearTaskState();
                 this.showStatus('检测到超时任务已自动清理，可以重新开始', 'warning');
                 return;
@@ -1242,8 +1195,6 @@ class PopupController {
 
             // 检查任务是否正在进行中
             if (taskData.status === 'running' || taskData.status === 'processing') {
-                console.log(`恢复任务状态: ${taskData.status}`);
-
                 this.isTaskRunning = true;
                 this.taskId = taskData.taskId;
 
@@ -1263,11 +1214,9 @@ class PopupController {
 
             } else if (taskData.status === 'completed' || taskData.status === 'failed') {
                 // 如果任务已经完成或失败，但数据还在，清理掉
-                console.log(`清理已完成的任务: ${taskData.status}`);
                 await this.clearTaskState();
 
             } else {
-                console.log(`未知任务状态: ${taskData.status}，清理任务数据`);
                 await this.clearTaskState();
             }
 
@@ -1282,8 +1231,6 @@ class PopupController {
      * 开始轮询任务状态
      */
     startTaskPolling(tabId, initialTaskAge = 0) {
-        console.log(`开始轮询任务状态，标签页ID: ${tabId}, 初始任务年龄: ${Math.round(initialTaskAge / 1000)}秒`);
-
         const POLLING_TIMEOUT = 10 * 60 * 1000; // 10分钟轮询超时
         const startTime = Date.now();
         let pollCount = 0;
@@ -1295,7 +1242,6 @@ class PopupController {
 
                 // 检查轮询是否超时
                 if (elapsedTime > POLLING_TIMEOUT) {
-                    console.log(`轮询超时 (${Math.round(elapsedTime / 1000)}秒)，强制停止`);
                     clearInterval(pollInterval);
                     await this.handlePollingTimeout(tabId);
                     return;
@@ -1310,22 +1256,17 @@ class PopupController {
 
                 // 如果任务数据不存在，停止轮询
                 if (!taskData) {
-                    console.log('任务数据不存在，停止轮询');
                     clearInterval(pollInterval);
                     this.handleTaskDataMissing();
                     return;
                 }
 
-                console.log(`轮询检查 #${pollCount}: 状态=${taskData.status}, 进度=${taskData.progressText}, 耗时=${Math.round(elapsedTime / 1000)}秒`);
-
                 // 检查任务是否已完成（无论成功还是失败）
                 if (taskData.status === 'completed') {
-                    console.log('任务已完成，处理结果');
                     clearInterval(pollInterval);
                     this.handleTaskCompleted(taskData);
                     chrome.storage.local.remove([taskKey]);
                 } else if (taskData.status === 'failed') {
-                    console.log('任务失败，处理错误');
                     clearInterval(pollInterval);
                     this.handleTaskFailed(taskData);
                     chrome.storage.local.remove([taskKey]);
@@ -1337,8 +1278,7 @@ class PopupController {
                     // 这个状态主要是popup刚启动时的状态
                 } else {
                     // 未知状态，记录警告但继续轮询
-                    console.warn(`未知任务状态: ${taskData.status}`);
-                }
+                    }
 
             } catch (error) {
                 console.error('轮询任务状态失败:', error);
@@ -1355,7 +1295,6 @@ class PopupController {
      * 处理轮询超时
      */
     async handlePollingTimeout(tabId) {
-        console.log('处理轮询超时');
         this.isTaskRunning = false;
         this.hideProgress();
 
@@ -1380,7 +1319,6 @@ class PopupController {
      * 处理任务数据丢失
      */
     handleTaskDataMissing() {
-        console.log('处理任务数据丢失');
         this.isTaskRunning = false;
         this.hideProgress();
 
@@ -1396,7 +1334,6 @@ class PopupController {
      * 处理轮询错误
      */
     handlePollingError(error) {
-        console.log('处理轮询错误:', error);
         this.isTaskRunning = false;
         this.hideProgress();
 
@@ -1412,7 +1349,6 @@ class PopupController {
      * 处理任务完成
      */
     handleTaskCompleted(taskData) {
-        console.log('处理任务完成，显示结果');
         this.isTaskRunning = false;
         this.hideProgress();
 
@@ -1439,7 +1375,6 @@ class PopupController {
      * 处理任务失败
      */
     handleTaskFailed(taskData) {
-        console.log('处理任务失败:', taskData.error);
         this.isTaskRunning = false;
         this.hideProgress();
 
@@ -1477,13 +1412,10 @@ class PopupController {
                 return;
             }
 
-            console.log('用户确认取消任务，开始清理...');
-
             // 清理轮询间隔
             if (this.currentPollInterval) {
                 clearInterval(this.currentPollInterval);
                 this.currentPollInterval = null;
-                console.log('已清理轮询间隔');
             }
 
             // 重置任务状态
@@ -1505,8 +1437,6 @@ class PopupController {
             // 显示取消成功消息
             this.showStatus('任务已取消', 'info');
 
-            console.log('任务取消完成');
-
         } catch (error) {
             console.error('取消任务失败:', error);
             this.showStatus('取消任务失败: ' + error.message, 'error');
@@ -1527,8 +1457,6 @@ class PopupController {
                 await new Promise((resolve) => {
                     chrome.storage.local.remove([taskKey], resolve);
                 });
-
-                console.log(`已清理任务状态: ${taskKey}`);
             }
         } catch (error) {
             console.error('清理任务状态失败:', error);
@@ -1561,8 +1489,6 @@ class PopupController {
                 }, 500);
             });
         }
-
-        console.log('强制重置功能已添加 (Ctrl+Shift+R 或三击页面标题)');
     }
 
     /**
@@ -1573,13 +1499,10 @@ class PopupController {
             const confirmed = confirm('强制重置将清除所有任务状态和缓存数据，确定继续吗？\n\n快捷键：Ctrl+Shift+R\n隐藏功能：三击页面标题');
             if (!confirmed) return;
 
-            console.log('开始强制重置...');
-
             // 清理轮询间隔
             if (this.currentPollInterval) {
                 clearInterval(this.currentPollInterval);
                 this.currentPollInterval = null;
-                console.log('已清理轮询间隔');
             }
 
             // 重置内部状态
@@ -1605,8 +1528,6 @@ class PopupController {
             // 显示重置成功消息
             this.showStatus('状态已强制重置，可以重新开始操作', 'success');
 
-            console.log('强制重置完成');
-
         } catch (error) {
             console.error('强制重置失败:', error);
             this.showStatus('强制重置失败: ' + error.message, 'error');
@@ -1631,11 +1552,8 @@ class PopupController {
                 await new Promise((resolve) => {
                     chrome.storage.local.remove(taskKeys, resolve);
                 });
-                console.log(`已清除 ${taskKeys.length} 个任务状态:`, taskKeys);
             } else {
-                console.log('没有找到需要清除的任务状态');
-            }
-
+                }
         } catch (error) {
             console.error('清除任务状态失败:', error);
         }

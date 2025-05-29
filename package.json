@@ -1,0 +1,67 @@
+{
+    "name": "mowen-chrome-extension",
+    "version": "1.0.0",
+    "description": "墨问笔记助手 Chrome 扩展 - 智能整理网页内容并发布到墨问笔记",
+    "private": true,
+    "scripts": {
+        "prepare": "node build/prepare-release.js",
+        "package": "node build/create-release-package.js",
+        "publish": "node build/publish.js",
+        "build": "npm run prepare && npm run package",
+        "clean": "rimraf build/temp build/release",
+        "validate": "node -e \"JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('✅ manifest.json 格式正确')\"",
+        "check": "node -e \"console.log('🔍 检查核心文件...'); const fs = require('fs'); const files = ['manifest.json', 'background.js', 'content.js', 'popup.html', 'popup.js', 'popup.css', 'options.html', 'options.js', 'sidepanel.html', 'sidepanel.js', 'icons/icon16.png', 'icons/icon48.png', 'icons/icon128.png']; const missing = files.filter(f => !fs.existsSync(f)); if (missing.length) { console.error('❌ 缺少文件:', missing.join(', ')); process.exit(1); } else { console.log('✅ 所有核心文件存在'); }\""
+    },
+    "keywords": [
+        "chrome-extension",
+        "productivity",
+        "note-taking",
+        "ai",
+        "mowen",
+        "web-clipper"
+    ],
+    "author": "墨问笔记助手团队",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/z4656207/mowen-plugin.git"
+    },
+    "bugs": {
+        "url": "https://github.com/z4656207/mowen-plugin/issues"
+    },
+    "homepage": "https://github.com/z4656207/mowen-plugin#readme",
+    "devDependencies": {
+        "archiver": "^7.0.1"
+    },
+    "engines": {
+        "node": ">=14.0.0"
+    },
+    "files": [
+        "manifest.json",
+        "background.js",
+        "content.js",
+        "popup.html",
+        "popup.css",
+        "popup.js",
+        "options.html",
+        "options.css",
+        "options.js",
+        "sidepanel.html",
+        "sidepanel.css",
+        "sidepanel.js",
+        "icons/"
+    ],
+    "buildConfig": {
+        "outputDir": "build/release",
+        "packageName": "mowen-chrome-extension",
+        "excludeFromBuild": [
+            "*.md",
+            "test*.html",
+            "debug.js",
+            "screenshot/",
+            "build/",
+            ".git/",
+            "node_modules/"
+        ]
+    }
+}

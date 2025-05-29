@@ -1,68 +1,70 @@
-// 内容脚本 - 提取网页内容
-(function() {
+// Chrome扩展内容脚本
+// 负责从网页中提取内容
+
+(() => {
     'use strict';
 
-    console.log('内容脚本已加载:', window.location.href);
+    // 监听来自扩展的消息
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        if (request.action === 'ping') {
+            sendResponse({ status: 'ready' });
+            return true;
+        }
+
+        if (request.action === 'extractContent') {
+            try {
+                const content = extractPageContent();
+                sendResponse({ success: true, data: content });
+            } catch (error) {
+                console.error('提取内容失败:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+            return true;
+        }
+    });
 
     /**
-     * 提取网页的主要内容
+     * 提取页面主要内容
      * @returns {Object} 包含标题、内容、URL等信息的对象
      */
     function extractPageContent() {
-        console.log('开始提取页面内容...');
-
-        // 获取页面标题
-        const title = document.title || '';
-        console.log('页面标题:', title);
-
-        // 获取页面URL
+        const title = document.title;
         const url = window.location.href;
-        console.log('页面URL:', url);
-
-        // 尝试提取主要内容区域
         let mainContent = '';
 
-        // 优先查找常见的内容容器
+        // 常见的内容选择器，按优先级排序
         const contentSelectors = [
             'article',
             'main',
-            '[role="main"]',
             '.content',
             '.post-content',
-            '.entry-content',
             '.article-content',
-            '#content',
-            '.main-content',
-            // 添加更多可能的选择器
+            '.entry-content',
+            '.post-body',
+            '.content-body',
             '.note-content',
             '.article-body',
-            '.post-body',
-            '.content-body'
+            '#content',
+            '#main-content',
+            '.main-content'
         ];
 
         let contentElement = null;
         for (const selector of contentSelectors) {
             contentElement = document.querySelector(selector);
             if (contentElement) {
-                console.log('找到内容容器:', selector);
-                console.log('容器元素:', contentElement);
-                console.log('容器innerHTML长度:', contentElement.innerHTML.length);
-                console.log('容器textContent长度:', contentElement.textContent.length);
-                console.log('容器前100个字符:', contentElement.textContent.substring(0, 100));
                 break;
             }
         }
 
         // 如果没找到特定容器，使用body但排除导航、侧边栏等
         if (!contentElement) {
-            console.log('未找到特定内容容器，使用body');
             contentElement = document.body;
         }
 
         if (contentElement) {
             // 克隆元素以避免修改原DOM
             const clonedElement = contentElement.cloneNode(true);
-            console.log('克隆元素完成，开始清理不需要的元素...');
 
             // 移除不需要的元素
             const unwantedSelectors = [
@@ -82,35 +84,24 @@
 
             unwantedSelectors.forEach(selector => {
                 const elements = clonedElement.querySelectorAll(selector);
-                console.log(`移除 ${elements.length} 个 ${selector} 元素`);
                 elements.forEach(el => el.remove());
             });
 
-            console.log('清理后的元素textContent长度:', clonedElement.textContent.length);
-            console.log('清理后的前100个字符:', clonedElement.textContent.substring(0, 100));
-
             // 提取文本内容，保留基本结构
             mainContent = extractTextWithStructure(clonedElement);
-            console.log('提取的内容长度:', mainContent.length);
-            console.log('提取的内容前200个字符:', mainContent.substring(0, 200));
-        }
+            }
 
         // 如果常规方法提取的内容太少，尝试墨问专用方法
         if (mainContent.trim().length < 100) {
-            console.log('常规提取内容太少，尝试墨问专用方法...');
             const mowenContent = extractMowenContent();
             if (mowenContent.length > mainContent.length) {
-                console.log('墨问专用方法提取到更多内容，使用墨问方法结果');
                 mainContent = mowenContent;
             }
         }
 
         // 如果还是没有足够内容，尝试等待动态加载
         if (mainContent.trim().length < 50) {
-            console.log('内容仍然太少，可能是动态加载，等待一段时间后重试...');
-            // 这里可以添加等待逻辑，但为了避免阻塞，我们先记录问题
-            console.log('建议：页面可能使用了动态加载，需要等待内容加载完成');
-        }
+            }
 
         // 获取页面描述
         const metaDescription = document.querySelector('meta[name="description"]');
@@ -124,12 +115,6 @@
             timestamp: new Date().toISOString()
         };
 
-        console.log('内容提取完成:', {
-            titleLength: result.title.length,
-            contentLength: result.content.length,
-            descriptionLength: result.description.length
-        });
-
         return result;
     }
 
@@ -142,8 +127,6 @@
         let result = '';
         let nodeCount = 0;
 
-        console.log('开始提取文本结构...');
-
         function processNode(node) {
             nodeCount++;
 
@@ -152,7 +135,7 @@
                 if (text) {
                     result += text + ' ';
                     if (nodeCount <= 10) {
-                        console.log(`文本节点 ${nodeCount}:`, text.substring(0, 50));
+                        result += '\n';
                     }
                 }
             } else if (node.nodeType === Node.ELEMENT_NODE) {
@@ -161,7 +144,6 @@
                 // 跳过隐藏元素
                 const style = window.getComputedStyle(node);
                 if (style.display === 'none' || style.visibility === 'hidden') {
-                    console.log(`跳过隐藏元素: ${tagName}`);
                     return;
                 }
 
@@ -170,7 +152,6 @@
                     const text = node.textContent.trim();
                     if (text) {
                         result += '\n\n' + text + '\n\n';
-                        console.log(`标题 ${tagName}:`, text);
                     }
                     return;
                 }
@@ -181,7 +162,7 @@
                     if (text) {
                         result += text + '\n\n';
                         if (nodeCount <= 10) {
-                            console.log(`段落 ${tagName}:`, text.substring(0, 50));
+                            result += '\n';
                         }
                     }
                     return;
@@ -192,7 +173,6 @@
                     const text = node.textContent.trim();
                     if (text) {
                         result += '• ' + text + '\n';
-                        console.log(`列表项:`, text.substring(0, 50));
                     }
                     return;
                 }
@@ -221,13 +201,8 @@
 
         processNode(element);
 
-        console.log(`处理了 ${nodeCount} 个节点`);
-        console.log('原始结果长度:', result.length);
-
         // 清理多余的空行
         const cleaned = result.replace(/\n{3,}/g, '\n\n').trim();
-        console.log('清理后结果长度:', cleaned.length);
-
         return cleaned;
     }
 
@@ -236,8 +211,6 @@
      * @returns {string} 提取的内容
      */
     function extractMowenContent() {
-        console.log('尝试墨问网站专用提取方法...');
-
         // 墨问网站可能的内容选择器
         const mowenSelectors = [
             '.note-content',
@@ -256,11 +229,6 @@
         for (const selector of mowenSelectors) {
             const element = document.querySelector(selector);
             if (element) {
-                console.log(`墨问专用选择器找到内容: ${selector}`);
-                console.log('元素:', element);
-                console.log('内容长度:', element.textContent.length);
-                console.log('内容预览:', element.textContent.substring(0, 200));
-
                 if (element.textContent.trim().length > 50) {
                     return extractTextWithStructure(element);
                 }
@@ -268,7 +236,6 @@
         }
 
         // 尝试查找所有可能包含文本的元素
-        console.log('尝试查找所有文本元素...');
         const allTextElements = document.querySelectorAll('p, div, span, h1, h2, h3, h4, h5, h6');
         let allText = '';
 
@@ -277,18 +244,17 @@
             if (text.length > 20 && !isNavigationElement(el)) {
                 allText += text + '\n\n';
                 if (index < 10) {
-                    console.log(`文本元素 ${index}:`, text.substring(0, 100));
+                    allText += '\n';
                 }
             }
         });
 
-        console.log('所有文本元素提取结果长度:', allText.length);
         return allText.trim();
     }
 
     /**
      * 判断是否为导航或无关元素
-     * @param {Element} element 
+     * @param {Element} element
      * @returns {boolean}
      */
     function isNavigationElement(element) {
@@ -316,8 +282,6 @@
      * @returns {Promise<string>} 提取的内容
      */
     async function waitForDynamicContent(maxWaitTime = 3000) {
-        console.log('等待动态内容加载...');
-
         const startTime = Date.now();
         let lastContentLength = 0;
 
@@ -339,11 +303,8 @@
                     }
                 }
 
-                console.log(`等待中... 当前内容长度: ${content.length}, 已等待: ${currentTime - startTime}ms`);
-
                 // 如果内容足够或者超时，返回结果
                 if (content.length > 100 || currentTime - startTime > maxWaitTime) {
-                    console.log('动态内容等待完成，最终内容长度:', content.length);
                     resolve(content);
                     return;
                 }
@@ -357,53 +318,8 @@
                 }
             };
 
-            // 开始检查
-            setTimeout(checkContent, 100);
+            checkContent();
         });
     }
 
-    // 监听来自popup的消息
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        console.log('收到消息:', request);
-
-        if (request.action === 'ping') {
-            console.log('响应ping消息');
-            sendResponse({ success: true, message: 'Content script is ready' });
-            return true;
-        }
-
-        if (request.action === 'extractContent') {
-            console.log('开始处理extractContent请求');
-
-            // 使用异步处理
-            (async() => {
-                try {
-                    let content = extractPageContent();
-
-                    // 如果内容太少，等待动态加载
-                    if (content.content.trim().length < 50) {
-                        console.log('内容太少，等待动态加载...');
-                        const dynamicContent = await waitForDynamicContent();
-                        if (dynamicContent.length > content.content.length) {
-                            content.content = dynamicContent;
-                            console.log('使用动态加载的内容，长度:', dynamicContent.length);
-                        }
-                    }
-
-                    console.log('内容提取成功，发送响应');
-                    sendResponse({ success: true, data: content });
-                } catch (error) {
-                    console.error('提取内容失败:', error);
-                    sendResponse({ success: false, error: error.message });
-                }
-            })();
-
-            return true; // 保持消息通道开放以支持异步响应
-        }
-
-        return true; // 保持消息通道开放
-    });
-
-    console.log('内容脚本初始化完成');
-
-})();
+    })();
