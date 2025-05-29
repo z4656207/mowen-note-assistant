@@ -121,10 +121,13 @@ class PopupController {
         });
 
         // 反馈链接
-        document.getElementById('feedbackLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showFeedback();
-        });
+        // const feedbackLink = document.getElementById('feedbackLink');
+        // if (feedbackLink) {
+        //     feedbackLink.addEventListener('click', (e) => {
+        //         e.preventDefault();
+        //         this.showFeedback();
+        //     });
+        // }
 
         // 诊断按钮
         document.getElementById('diagnoseBtn').addEventListener('click', () => {
@@ -884,39 +887,120 @@ class PopupController {
      * 显示帮助信息
      */
     showHelp() {
-        const helpContent = `
-使用说明：
+        const helpContent = {
+            '核心功能': [
+                '智能内容提取：自动识别网页主要内容',
+                'AI整理优化：使用AI对内容进行格式化和结构优化',
+                '一键发布：直接发布到墨问笔记平台'
+            ],
+            '处理模式': [
+                '总结模式：提取文章要点，适合长文快速阅读',
+                '全文整理模式：保留完整内容，优化格式和结构'
+            ],
+            '发布设置': [
+                '公开笔记：发布后其他用户可见',
+                '私有笔记：仅自己可见的私密内容',
+                '生成标签：AI自动为内容生成1-3个相关标签，便于分类管理'
+            ],
+            '自定义提示词': [
+                '输入额外的指导信息来定制AI处理结果',
+                '例如："请重点关注技术细节"、"使用专业术语"等',
+                '字数限制：500字符以内',
+                '只有输入内容时才会影响AI处理'
+            ],
+            '任务管理': [
+                '任务在后台运行，可自由切换标签页',
+                '使用"取消任务"按钮停止进行中的任务',
+                '强制重置：三击页面标题清除异常状态'
+            ],
+            '支持的页面': [
+                '新闻文章、博客文章、技术文档',
+                '学术论文、产品介绍页面',
+                '不支持Chrome内部页面和应用商店页面'
+            ]
+        };
 
-1. 首次使用需要在设置页面配置API密钥
-2. 选择处理模式：
-   - 总结模式：AI会提取和总结网页的核心内容
-   - 全文整理模式：AI会整理全文格式，保留完整内容
-3. 选择发布方式：
-   - 公开笔记：发布后任何人都可以访问
-   - 私有笔记：只有自己可以查看
-4. 点击相应按钮开始处理
-5. AI会自动整理网页内容并发布到墨问笔记
-6. 支持的格式：加粗、高亮、链接、标签
+        this.showHelpModal(helpContent);
+    }
 
-功能说明：
-- 总结模式：适合长文章的要点提取
-- 全文整理模式：适合需要保留完整信息的内容
-- 两种模式都会自动优化格式和结构
+    /**
+     * 显示自定义帮助弹框
+     * @param {Object} content - 帮助内容对象
+     */
+    showHelpModal(content) {
+            const modal = document.getElementById('helpModal');
+            const modalBody = document.getElementById('helpModalBody');
 
-任务控制：
-- 取消任务：在任务执行期间点击"取消任务"按钮
-- 强制重置：Ctrl+Shift+R 或三击页面标题
-- 自动超时：任务超过5分钟会自动清理
+            if (!modal || !modalBody) {
+                console.error('帮助弹框元素未找到');
+                return;
+            }
 
-注意事项：
-- 需要墨问Pro会员才能使用API
-- 每天有使用配额限制
-- 全文整理模式会消耗更多AI tokens
-- 建议在内容丰富的页面使用效果更佳
-- 如遇状态异常，可使用强制重置功能
-    `;
+            // 生成HTML内容
+            let html = '';
+            Object.entries(content).forEach(([sectionTitle, items]) => {
+                        html += `
+                <div class="help-section">
+                    <div class="help-section-title">${sectionTitle}</div>
+                    <ul class="help-list">
+                        ${items.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        });
 
-        alert(helpContent);
+        modalBody.innerHTML = html;
+
+        // 显示弹框
+        modal.classList.add('show');
+
+        // 绑定关闭事件（如果还没有绑定）
+        this.bindHelpModalEvents();
+    }
+
+    /**
+     * 绑定帮助弹框事件
+     */
+    bindHelpModalEvents() {
+        const modal = document.getElementById('helpModal');
+        const closeBtn = document.getElementById('helpModalClose');
+
+        if (!modal || !closeBtn) return;
+
+        // 避免重复绑定
+        if (modal.dataset.eventsBinds) return;
+
+        // 点击关闭按钮
+        closeBtn.addEventListener('click', () => {
+            this.hideHelpModal();
+        });
+
+        // 点击遮罩层关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.hideHelpModal();
+            }
+        });
+
+        // ESC键关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('show')) {
+                this.hideHelpModal();
+            }
+        });
+
+        // 标记已绑定事件
+        modal.dataset.eventsBinds = 'true';
+    }
+
+    /**
+     * 隐藏帮助弹框
+     */
+    hideHelpModal() {
+        const modal = document.getElementById('helpModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
     }
 
     /**

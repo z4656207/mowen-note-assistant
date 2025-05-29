@@ -163,9 +163,28 @@
         <footer class="footer">
             <div class="footer-links">
                 <a href="#" id="helpLink">使用帮助</a>
-                <a href="#" id="feedbackLink">意见反馈</a>
+                <!-- <a href="#" id="feedbackLink">意见反馈</a> -->
             </div>
         </footer>
+    </div>
+
+    <!-- 自定义帮助弹框 -->
+    <div id="helpModal" class="help-modal">
+        <div class="help-modal-content">
+            <div class="help-modal-header">
+                <h3 class="help-modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg> 使用帮助
+                </h3>
+                <button class="help-modal-close" id="helpModalClose">×</button>
+            </div>
+            <div class="help-modal-body" id="helpModalBody">
+                <!-- 内容将通过JavaScript动态填充 -->
+            </div>
+        </div>
     </div>
 
     <script src="popup.js"></script>
