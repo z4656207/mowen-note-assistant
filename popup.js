@@ -145,6 +145,9 @@ class PopupController {
      */
     async loadPageInfo() {
         try {
+            // 首先清理可能存在的帮助信息
+            this.clearPageTypeHelp();
+
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (!tab) {
                 this.showStatus('无法获取当前页面信息', 'error');
@@ -167,6 +170,17 @@ class PopupController {
                 return;
             }
 
+            // 页面支持内容提取，重新启用提取按钮（如果之前被禁用了）
+            const extractBtn = document.getElementById('extractBtn');
+            if (extractBtn) {
+                // 只有在配置完整的情况下才启用按钮
+                const config = await this.getStoredConfig();
+                if (this.validateConfig(config)) {
+                    extractBtn.disabled = false;
+                    extractBtn.title = '';
+                }
+            }
+
             // 更新页面信息显示
             document.getElementById('pageTitle').textContent = tab.title || '无标题';
             document.getElementById('pageUrl').textContent = tab.url || '';
@@ -180,8 +194,23 @@ class PopupController {
         }
     }
 
+    /**
+     * 清理页面类型帮助信息
+     */
+    clearPageTypeHelp() {
+        const existingHelpElements = document.querySelectorAll('.help-message');
+        console.log(`清理帮助信息: 找到 ${existingHelpElements.length} 个帮助元素`);
+        existingHelpElements.forEach((element, index) => {
+            console.log(`移除帮助元素 ${index + 1}:`, element);
+            element.remove();
+        });
+    }
+
     // 添加页面类型帮助信息
     showPageTypeHelp(url) {
+        // 先清理可能存在的帮助信息（防止重复显示）
+        this.clearPageTypeHelp();
+
         let helpMessage = '';
 
         if (url.startsWith('chrome://')) {
