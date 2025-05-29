@@ -10,23 +10,21 @@ class MowenNoteHelper {
      * 设置扩展图标点击监听器
      */
     setupActionListener() {
-        // 监听扩展图标点击
-        chrome.action.onClicked.addListener(async(tab) => {
-            try {
-                // 检查用户偏好的模式
-                const result = await chrome.storage.local.get(['sidePanelMode']);
-                const useSidePanel = result.sidePanelMode !== false; // 默认使用侧边栏
-
-                if (useSidePanel && chrome.sidePanel) {
-                    // 打开侧边栏
-                    await chrome.sidePanel.open({ tabId: tab.id });
-                } else {
-                    // 使用默认的popup行为（不需要额外处理）
-                    console.log('使用弹窗模式');
-                }
-            } catch (error) {
-                console.error('处理扩展图标点击失败:', error);
-                // 如果侧边栏失败，回退到popup
+        // 监听扩展图标点击 - 始终打开侧边栏
+        chrome.action.onClicked.addListener((tab) => {
+            if (chrome.sidePanel) {
+                chrome.sidePanel.open({ tabId: tab.id })
+                    .then(() => {
+                        console.log('侧边栏已打开');
+                    })
+                    .catch((error) => {
+                        console.error('打开侧边栏失败:', error);
+                        // 如果侧边栏失败，作为后备方案显示popup
+                        chrome.action.setPopup({ popup: 'popup.html' });
+                    });
+            } else {
+                // 不支持侧边栏的环境，设置popup作为后备
+                chrome.action.setPopup({ popup: 'popup.html' });
             }
         });
     }
@@ -85,13 +83,13 @@ class MowenNoteHelper {
                 // 立即响应，告知任务已开始
                 sendResponse({ success: true, message: '任务已开始处理' });
                 return false; // 不保持消息通道开放
-            } else if (request.action === 'toggleSidePanel') {
-                // 处理侧边栏切换请求
-                this.handleToggleSidePanel(request, sender, sendResponse);
+            } else if (request.action === 'switchToPopup') {
+                // 处理切换到popup的请求
+                this.handleSwitchToPopup(request, sender, sendResponse);
                 return true; // 保持消息通道开放
-            } else if (request.action === 'getSidePanelStatus') {
-                // 获取侧边栏状态
-                this.handleGetSidePanelStatus(request, sender, sendResponse);
+            } else if (request.action === 'switchToSidePanel') {
+                // 处理切换到侧边栏的请求
+                this.handleSwitchToSidePanel(request, sender, sendResponse);
                 return true; // 保持消息通道开放
             } else if (request.action === 'ping') {
                 // 处理ping请求，用于测试扩展通信
@@ -107,60 +105,86 @@ class MowenNoteHelper {
     }
 
     /**
-     * 处理侧边栏切换
+     * 处理切换到popup
      */
-    async handleToggleSidePanel(request, sender, sendResponse) {
+    async handleSwitchToPopup(request, sender, sendResponse) {
         try {
-            const { enabled, tabId } = request;
+            const { tabId } = request;
 
-            // 保存用户偏好
-            await chrome.storage.local.set({ 'sidePanelMode': enabled });
+            // 设置popup
+            await chrome.action.setPopup({ popup: 'popup.html' });
 
-            if (enabled && chrome.sidePanel) {
-                // 启用侧边栏
-                await chrome.sidePanel.setOptions({
-                    enabled: true,
-                    path: 'sidepanel.html'
-                });
-
-                // 如果指定了标签页，打开侧边栏
-                if (tabId) {
-                    await chrome.sidePanel.open({ tabId: tabId });
+            // 尝试关闭侧边栏 - Chrome没有直接的关闭API，但设置popup后会自动处理
+            if (chrome.sidePanel) {
+                try {
+                    // 通过设置popup来覆盖侧边栏行为
+                    console.log('popup已设置，侧边栏应该会被替代');
+                } catch (error) {
+                    console.log('侧边栏处理时出错:', error);
                 }
-
-                sendResponse({ success: true, message: '侧边栏已启用' });
-            } else {
-                // 禁用侧边栏（回到popup模式）
-                if (chrome.sidePanel) {
-                    await chrome.sidePanel.setOptions({
-                        enabled: false
-                    });
-                }
-
-                sendResponse({ success: true, message: '已切换到弹窗模式' });
             }
+
+            // 立即通过程序化方式打开popup
+            try {
+                // Chrome 99+ 支持 openPopup API
+                if (chrome.action.openPopup) {
+                    await chrome.action.openPopup();
+                    console.log('通过openPopup API打开popup');
+                } else {
+                    // 备用方案：通过windows API创建popup样式的窗口
+                    const popupWindow = await chrome.windows.create({
+                        url: chrome.runtime.getURL('popup.html'),
+                        type: 'popup',
+                        width: 400,
+                        height: 600,
+                        focused: true
+                    });
+                    console.log('通过windows API创建popup窗口:', popupWindow.id);
+                }
+            } catch (openError) {
+                console.error('打开popup失败:', openError);
+                // 如果都失败了，至少popup已经设置好了，用户可以手动点击图标
+                console.log('popup已设置，用户可以点击扩展图标打开');
+            }
+
+            sendResponse({ success: true, message: '已切换到popup模式' });
         } catch (error) {
-            console.error('切换侧边栏失败:', error);
+            console.error('切换到popup失败:', error);
             sendResponse({ success: false, error: error.message });
         }
     }
 
     /**
-     * 获取侧边栏状态
+     * 处理切换到侧边栏
      */
-    async handleGetSidePanelStatus(request, sender, sendResponse) {
+    async handleSwitchToSidePanel(request, sender, sendResponse) {
         try {
-            const result = await chrome.storage.local.get(['sidePanelMode']);
-            const isEnabled = result.sidePanelMode !== false; // 默认启用
-            const isSupported = !!chrome.sidePanel;
+            const { tabId } = request;
 
-            sendResponse({
-                success: true,
-                enabled: isEnabled,
-                supported: isSupported
-            });
+            // 先清除popup设置，恢复点击时打开侧边栏的行为
+            await chrome.action.setPopup({ popup: '' });
+
+            // 在同步上下文中立即打开侧边栏，避免用户手势丢失
+            if (chrome.sidePanel && tabId) {
+                // 这里不能用await，必须在同步上下文中执行
+                chrome.sidePanel.open({ tabId: tabId })
+                    .then(() => {
+                        console.log('侧边栏已打开');
+                        sendResponse({ success: true, message: '已切换到侧边栏模式' });
+                    })
+                    .catch((error) => {
+                        console.error('切换到侧边栏失败:', error);
+                        sendResponse({ success: false, error: error.message });
+                    });
+
+                // 立即返回true保持消息通道开放，等待异步操作完成
+                return true;
+            } else {
+                sendResponse({ success: false, error: '侧边栏API不可用或缺少标签页ID' });
+            }
+
         } catch (error) {
-            console.error('获取侧边栏状态失败:', error);
+            console.error('切换到侧边栏失败:', error);
             sendResponse({ success: false, error: error.message });
         }
     }

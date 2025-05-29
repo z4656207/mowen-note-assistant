@@ -73,6 +73,11 @@ class PopupController {
             chrome.runtime.openOptionsPage();
         });
 
+        // 模式切换按钮
+        document.getElementById('toggleModeBtn').addEventListener('click', () => {
+            this.toggleToSidePanelMode();
+        });
+
         // 关闭结果按钮
         document.getElementById('closeResult').addEventListener('click', () => {
             this.hideResult();
@@ -737,6 +742,48 @@ class PopupController {
      */
     hideResult() {
         document.getElementById('result').style.display = 'none';
+    }
+
+    /**
+     * 切换到侧边栏模式
+     */
+    async toggleToSidePanelMode() {
+        try {
+            // 获取当前标签页
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab) {
+                this.showStatus('无法获取当前标签页', 'error');
+                return;
+            }
+
+            console.log('准备切换到侧边栏模式，标签页ID:', tab.id);
+
+            // 直接在用户手势同步上下文中操作，避免通过background script
+            // 1. 先清除popup设置
+            await chrome.action.setPopup({ popup: '' });
+
+            // 2. 立即在同步上下文中打开侧边栏
+            if (chrome.sidePanel) {
+                await chrome.sidePanel.open({ tabId: tab.id });
+                console.log('侧边栏已打开，popup即将关闭');
+
+                // 3. 关闭当前popup窗口
+                window.close();
+            } else {
+                throw new Error('当前Chrome版本不支持侧边栏API');
+            }
+
+        } catch (error) {
+            console.error('切换模式失败:', error);
+            this.showStatus('切换模式失败: ' + error.message, 'error');
+
+            // 如果切换失败，尝试恢复popup设置
+            try {
+                await chrome.action.setPopup({ popup: 'popup.html' });
+            } catch (restoreError) {
+                console.error('恢复popup设置失败:', restoreError);
+            }
+        }
     }
 
     /**
