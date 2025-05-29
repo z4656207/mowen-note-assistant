@@ -1,0 +1,536 @@
+/* 基础样式重置 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    background: #f5f7fa;
+}
+
+
+/* 容器 */
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    min-height: 100vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+
+/* 头部 */
+
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 24px 32px;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}
+
+
+/* 主要内容 */
+
+.main {
+    padding: 32px;
+}
+
+
+/* 配置表单 */
+
+.config-form {
+    margin-bottom: 40px;
+}
+
+
+/* 配置区块 */
+
+.config-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid #e9ecef;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.section-title svg {
+    color: #667eea;
+}
+
+
+/* 表单组 */
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.required {
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: white;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-input:invalid {
+    border-color: #dc3545;
+}
+
+.form-help {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.help-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.help-link:hover {
+    text-decoration: underline;
+}
+
+
+/* 密码输入框样式 */
+
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input {
+    width: 100%;
+    padding-right: 48px !important;
+    /* 为眼睛图标留出空间 */
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    color: #6c757d;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.password-toggle:hover {
+    color: #495057;
+    background: rgba(108, 117, 125, 0.1);
+}
+
+.password-toggle:focus {
+    outline: none;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.password-toggle:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.eye-icon {
+    transition: opacity 0.2s ease;
+}
+
+
+/* 确保眼睛图标不影响输入框的焦点样式，保持与原来输入框一致 */
+
+.password-input-wrapper:focus-within .password-toggle {
+    color: #667eea;
+}
+
+
+/* 复选框样式 */
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #495057;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e9ecef;
+    border-radius: 4px;
+    background: white;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.checkbox-label input[type="checkbox"]:checked+.checkbox-custom {
+    background: #667eea;
+    border-color: #667eea;
+}
+
+.checkbox-label input[type="checkbox"]:checked+.checkbox-custom::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+
+/* 表单操作按钮 */
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 24px;
+    border-top: 1px solid #e9ecef;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+
+/* 状态显示 */
+
+.status {
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    display: none;
+    border-left: 4px solid;
+}
+
+.status.success {
+    background: #d4edda;
+    color: #155724;
+    border-color: #28a745;
+}
+
+.status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #dc3545;
+}
+
+.status.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-color: #17a2b8;
+}
+
+.status.warning {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffc107;
+}
+
+
+/* 帮助区块 */
+
+.help-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e9ecef;
+}
+
+.help-content {
+    margin-top: 16px;
+}
+
+.help-item {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.help-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.help-item h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.help-item p {
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+
+/* 底部 */
+
+.footer {
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    padding: 24px 32px;
+    margin-top: auto;
+}
+
+.footer-content {
+    text-align: center;
+}
+
+.footer-content p {
+    color: #6c757d;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.footer-links a {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: #5a67d8;
+    text-decoration: underline;
+}
+
+
+/* 响应式设计 */
+
+@media (max-width: 768px) {
+    .container {
+        margin: 0;
+        box-shadow: none;
+    }
+    .header {
+        padding: 20px 24px;
+    }
+    .main {
+        padding: 24px;
+    }
+    .config-section {
+        padding: 20px;
+    }
+    .form-actions {
+        flex-direction: column;
+    }
+    .btn {
+        width: 100%;
+    }
+    .footer {
+        padding: 20px 24px;
+    }
+    .footer-links {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+
+/* 加载动画 */
+
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* 淡入动画 */
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* 工具提示 */
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}

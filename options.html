@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>墨问笔记助手 - 设置</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="logo">
+                <img src="icons/icon48.png" alt="墨问笔记助手" class="logo-img">
+                <h1 class="title">墨问笔记助手 - 设置</h1>
+            </div>
+        </header>
+
+        <!-- 主要内容 -->
+        <main class="main">
+            <!-- 配置表单 -->
+            <form id="configForm" class="config-form">
+                <!-- AI模型配置 -->
+                <section class="config-section">
+                    <h2 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg> AI模型配置
+                    </h2>
+
+                    <div class="form-group">
+                        <label for="aiApiUrl" class="form-label">
+              AI API地址
+              <span class="required">*</span>
+            </label>
+                        <input type="url" id="aiApiUrl" name="aiApiUrl" class="form-input" placeholder="https://api.openai.com/v1/chat/completions" required>
+                        <div class="form-help">
+                            支持OpenAI兼容的API接口，如OpenAI、Claude、国产大模型等
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aiApiKey" class="form-label">
+              AI API密钥
+              <span class="required">*</span>
+            </label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="aiApiKey" name="aiApiKey" class="form-input password-input" placeholder="sk-..." required>
+                            <button type="button" class="password-toggle" data-target="aiApiKey" title="显示/隐藏密钥">
+                                <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="form-help">
+                            您的AI服务提供商的API密钥，将安全存储在本地
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aiModel" class="form-label">
+              AI模型名称
+              <span class="required">*</span>
+            </label>
+                        <input type="text" id="aiModel" name="aiModel" class="form-input" placeholder="gpt-3.5-turbo" required>
+                        <div class="form-help">
+                            模型名称，如：gpt-3.5-turbo、gpt-4、claude-3-sonnet等
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 墨问API配置 -->
+                <section class="config-section">
+                    <h2 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10,9 9,9 8,9"></polyline>
+            </svg> 墨问笔记配置
+                    </h2>
+
+                    <div class="form-group">
+                        <label for="mowenApiKey" class="form-label">
+              墨问API密钥
+              <span class="required">*</span>
+            </label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="mowenApiKey" name="mowenApiKey" class="form-input password-input" placeholder="您的墨问API密钥" required>
+                            <button type="button" class="password-toggle" data-target="mowenApiKey" title="显示/隐藏密钥">
+                                <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="form-help">
+                            需要墨问Pro会员才能获取API密钥。
+                            <a href="https://open.mowen.cn" target="_blank" rel="noopener" class="help-link">获取API密钥</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 高级设置 -->
+                <section class="config-section">
+                    <h2 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg> 高级设置
+                    </h2>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+              <input type="checkbox" id="autoPublish" name="autoPublish" checked>
+              <span class="checkbox-custom"></span>
+              发布公开笔记
+            </label>
+                        <div class="form-help">
+                            创建笔记后发布为公开，否则发布为私有
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+              <input type="checkbox" id="includeSource" name="includeSource" checked>
+              <span class="checkbox-custom"></span>
+              包含来源链接
+            </label>
+                        <div class="form-help">
+                            在笔记中包含原网页链接
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 操作按钮 -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20,6 9,17 4,12"></polyline>
+            </svg>
+            保存设置
+          </button>
+
+                    <button type="button" id="testBtn" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"></path>
+              <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+              <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+            </svg>
+            测试连接
+          </button>
+
+                    <button type="button" id="resetBtn" class="btn btn-danger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3,6 5,6 21,6"></polyline>
+              <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+            </svg>
+            重置设置
+          </button>
+                </div>
+            </form>
+
+            <!-- 状态显示 -->
+            <div id="status" class="status"></div>
+
+            <!-- 使用说明 -->
+            <section class="help-section">
+                <h2 class="section-title">使用说明</h2>
+                <div class="help-content">
+                    <div class="help-item">
+                        <h3>1. 获取AI API密钥</h3>
+                        <p>支持OpenAI、Claude、国产大模型等兼容OpenAI API格式的服务。推荐使用GPT-3.5-turbo或GPT-4模型以获得最佳效果。</p>
+                    </div>
+
+                    <div class="help-item">
+                        <h3>2. 获取墨问API密钥</h3>
+                        <p>需要墨问Pro会员才能使用API功能。登录墨问后台，在开发者设置中生成API密钥。</p>
+                    </div>
+
+                    <div class="help-item">
+                        <h3>3. 使用插件</h3>
+                        <p>配置完成后，在任意网页点击插件图标，选择"提取并发布到墨问"即可自动整理内容并发布笔记。</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部 -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 墨问笔记助手. 数据安全存储在本地，不会上传到任何服务器。</p>
+                <div class="footer-links">
+                    <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+                    <a href="https://mowen.cn" target="_blank" rel="noopener">墨问官网</a>
+                    <a href="#" id="aboutLink">关于</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+
+</html>

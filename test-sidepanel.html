@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>侧边栏功能测试页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .feature-box {
+            background: #ecf0f1;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ffeaa7;
+            margin: 15px 0;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+        }
+        
+        .button {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎯 墨问笔记助手 - 侧边栏功能测试</h1>
+
+        <div class="highlight">
+            <strong>📢 测试说明：</strong> 这个页面用于测试墨问笔记助手的侧边栏功能。请按照以下步骤进行测试。
+        </div>
+
+        <div class="feature-box">
+            <h2>🚀 新功能特点</h2>
+            <ul>
+                <li><strong>持久化界面：</strong> 点击页面其他位置不会关闭侧边栏</li>
+                <li><strong>自动跟踪：</strong> 切换标签页时自动更新页面信息</li>
+                <li><strong>后台处理：</strong> 即使关闭侧边栏，任务仍在后台继续执行</li>
+                <li><strong>状态恢复：</strong> 重新打开侧边栏时自动恢复任务状态</li>
+                <li><strong>模式切换：</strong> 可以在侧边栏和弹窗模式之间切换</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 测试步骤</h3>
+            <ol>
+                <li><strong>打开侧边栏：</strong> 点击浏览器工具栏中的墨问笔记助手图标</li>
+                <li><strong>测试持久化：</strong> 点击页面其他位置，验证侧边栏不会关闭</li>
+                <li><strong>测试页面跟踪：</strong> 切换到其他标签页，观察侧边栏内容是否更新</li>
+                <li><strong>测试任务处理：</strong> 启动一个内容整理任务</li>
+                <li><strong>测试后台执行：</strong> 在任务进行中关闭侧边栏，然后重新打开</li>
+                <li><strong>测试模式切换：</strong> 在侧边栏中点击"切换到弹窗模式"按钮</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 调试信息</h3>
+            <p>如果侧边栏出现问题，请按以下步骤检查：</p>
+
+            <div style="margin: 15px 0;">
+                <button class="button" onclick="checkSidePanelErrors()">检查侧边栏错误</button>
+                <button class="button" onclick="checkExtensionStatus()">检查扩展状态</button>
+                <button class="button" onclick="clearAllData()">清除所有数据</button>
+            </div>
+
+            <div id="debugInfo" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; display: none;">
+                <h4>调试信息：</h4>
+                <pre id="debugContent" style="white-space: pre-wrap; font-size: 12px;"></pre>
+            </div>
+
+            <div class="highlight">
+                <strong>🛠️ 常见问题解决：</strong>
+                <ul>
+                    <li><strong>侧边栏无法打开：</strong> 检查Chrome版本是否≥114，确保扩展已启用</li>
+                    <li><strong>配置错误：</strong> 确保在设置页面正确配置了所有API密钥</li>
+                    <li><strong>权限问题：</strong> 检查扩展是否有必要的权限</li>
+                    <li><strong>网络问题：</strong> 检查网络连接和API服务状态</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-box">
+            <h3>📝 测试内容示例</h3>
+            <p>这里是一些测试内容，用于验证内容提取和AI处理功能：</p>
+
+            <h4>技术特性</h4>
+            <p>Chrome扩展的侧边栏（Side Panel）是Chrome 114版本引入的新特性，它提供了一个持久化的用户界面，不会因为用户点击页面其他位置而关闭。这解决了传统popup在用户交互时容易意外关闭的问题。</p>
+
+            <h4>实现原理</h4>
+            <p>侧边栏通过manifest.json中的side_panel配置实现，使用chrome.sidePanel API进行控制。它运行在独立的上下文中，可以与后台脚本和内容脚本进行通信，实现复杂的功能。</p>
+
+            <div class="code-block">
+                // 侧边栏配置示例 "side_panel": { "default_path": "sidepanel.html" }, "permissions": [ "sidePanel", "activeTab", "storage" ]
+            </div>
+
+            <h4>用户体验优势</h4>
+            <ul>
+                <li>界面持久化，不会意外关闭</li>
+                <li>更大的显示空间，适合复杂操作</li>
+                <li>支持长时间任务处理</li>
+                <li>更好的多任务处理体验</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🎮 交互测试</h3>
+            <p>点击下面的按钮来测试页面交互，验证侧边栏是否保持打开状态：</p>
+
+            <button class="button" onclick="testClick(1)">测试按钮 1</button>
+            <button class="button" onclick="testClick(2)">测试按钮 2</button>
+            <button class="button" onclick="testClick(3)">测试按钮 3</button>
+
+            <div id="clickResult" style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 5px; display: none;">
+                <strong>✅ 点击测试结果：</strong> <span id="clickText"></span>
+            </div>
+        </div>
+
+        <div class="highlight">
+            <h3>🔍 预期结果</h3>
+            <ul>
+                <li>侧边栏应该保持打开状态，不受页面点击影响</li>
+                <li>切换标签页时，侧边栏内容应该自动更新</li>
+                <li>任务进行中关闭侧边栏，重新打开时应该显示任务进度</li>
+                <li>模式切换功能应该正常工作</li>
+                <li>所有原有功能应该在侧边栏中正常工作</li>
+            </ul>
+        </div>
+
+        <div class="feature-box">
+            <h3>📊 技术实现细节</h3>
+            <p>本次更新主要包含以下技术改进：</p>
+            <ul>
+                <li><strong>Manifest V3兼容：</strong> 使用最新的Chrome扩展API</li>
+                <li><strong>双模式支持：</strong> 同时支持popup和sidepanel模式</li>
+                <li><strong>状态同步：</strong> 使用chrome.storage.local实现状态持久化</li>
+                <li><strong>事件监听：</strong> 监听标签页切换和页面更新事件</li>
+                <li><strong>错误处理：</strong> 完善的错误处理和回退机制</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testClick(buttonNumber) {
+            const resultDiv = document.getElementById('clickResult');
+            const textSpan = document.getElementById('clickText');
+
+            textSpan.textContent = `按钮 ${buttonNumber} 被点击了！时间：${new Date().toLocaleTimeString()}`;
+            resultDiv.style.display = 'block';
+
+            // 3秒后隐藏结果
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 检查侧边栏错误
+        function checkSidePanelErrors() {
+            const debugInfo = document.getElementById('debugInfo');
+            const debugContent = document.getElementById('debugContent');
+
+            let info = '=== 侧边栏状态检查 ===\n';
+            info += `时间: ${new Date().toLocaleString()}\n`;
+            info += `Chrome版本: ${navigator.userAgent}\n`;
+            info += `页面URL: ${window.location.href}\n\n`;
+
+            // 检查Chrome扩展API
+            if (typeof chrome !== 'undefined') {
+                info += '✅ Chrome扩展API可用\n';
+
+                if (chrome.sidePanel) {
+                    info += '✅ Side Panel API可用\n';
+                } else {
+                    info += '❌ Side Panel API不可用 (需要Chrome 114+)\n';
+                }
+
+                if (chrome.storage) {
+                    info += '✅ Storage API可用\n';
+                } else {
+                    info += '❌ Storage API不可用\n';
+                }
+            } else {
+                info += '❌ Chrome扩展API不可用\n';
+            }
+
+            info += '\n=== 建议操作 ===\n';
+            info += '1. 检查Chrome版本是否≥114\n';
+            info += '2. 确保扩展已正确安装并启用\n';
+            info += '3. 尝试重新加载扩展\n';
+            info += '4. 检查扩展的权限设置\n';
+
+            debugContent.textContent = info;
+            debugInfo.style.display = 'block';
+        }
+
+        // 检查扩展状态
+        function checkExtensionStatus() {
+            const debugInfo = document.getElementById('debugInfo');
+            const debugContent = document.getElementById('debugContent');
+
+            let info = '=== 扩展状态检查 ===\n';
+            info += `时间: ${new Date().toLocaleString()}\n\n`;
+
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                try {
+                    info += `扩展ID: ${chrome.runtime.id}\n`;
+
+                    // 检查扩展是否可以通信
+                    chrome.runtime.sendMessage({
+                        action: 'ping'
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            info += `❌ 扩展通信失败: ${chrome.runtime.lastError.message}\n`;
+                        } else {
+                            info += '✅ 扩展通信正常\n';
+                        }
+                        debugContent.textContent = info;
+                    });
+
+                } catch (error) {
+                    info += `❌ 扩展检查失败: ${error.message}\n`;
+                }
+            } else {
+                info += '❌ 无法访问扩展运行时\n';
+            }
+
+            debugContent.textContent = info;
+            debugInfo.style.display = 'block';
+        }
+
+        // 清除所有数据
+        function clearAllData() {
+            if (confirm('确定要清除所有扩展数据吗？这将重置所有设置和任务状态。')) {
+                if (typeof chrome !== 'undefined' && chrome.storage) {
+                    chrome.storage.local.clear(() => {
+                        chrome.storage.sync.clear(() => {
+                            alert('所有数据已清除，请重新配置扩展。');
+                        });
+                    });
+                } else {
+                    alert('无法访问存储API，请手动在扩展管理页面重置。');
+                }
+            }
+        }
+
+        // 页面加载完成后的提示
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('测试页面已加载，可以开始测试侧边栏功能');
+
+            // 自动检查基本状态
+            setTimeout(() => {
+                if (typeof chrome === 'undefined') {
+                    console.warn('警告：Chrome扩展API不可用，可能需要在扩展环境中运行');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html>

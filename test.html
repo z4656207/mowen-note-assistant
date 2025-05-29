@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>墨问笔记助手 - 测试页面</title>
+    <meta name="description" content="这是一个用于测试墨问笔记助手内容提取功能的测试页面">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        
+        .content {
+            margin: 20px 0;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
+        
+        ul {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>墨问笔记助手测试页面</h1>
+
+        <div class="content">
+            <p>欢迎使用墨问笔记助手！这是一个专门用于测试内容提取功能的页面。</p>
+
+            <h2>功能特点</h2>
+            <ul>
+                <li>智能提取网页主要内容</li>
+                <li>支持多种内容格式识别</li>
+                <li>自动过滤导航和广告内容</li>
+                <li>保留文本结构和格式</li>
+                <li>支持动态内容加载</li>
+            </ul>
+
+            <h2>使用说明</h2>
+            <div class="highlight">
+                <strong>重要提示：</strong>请确保已正确配置API密钥，并在支持的网站上使用此扩展。
+            </div>
+
+            <p>要使用墨问笔记助手，请按照以下步骤操作：</p>
+            <ol>
+                <li>打开任意网页（如新闻文章、博客文章等）</li>
+                <li>点击浏览器工具栏中的墨问笔记助手图标</li>
+                <li>等待页面内容加载完成</li>
+                <li>选择处理模式（总结或全文整理）</li>
+                <li>点击"提取并发布"按钮</li>
+            </ol>
+
+            <h2>技术实现</h2>
+            <p>本扩展采用以下技术实现内容提取：</p>
+
+            <div class="code-block">
+                // 内容提取核心逻辑 function extractPageContent() { // 1. 识别主要内容区域 // 2. 过滤无关元素 // 3. 保留文本结构 // 4. 处理动态内容 return processedContent; }
+            </div>
+
+            <h2>支持的网站类型</h2>
+            <ul>
+                <li>新闻网站和在线媒体</li>
+                <li>技术博客和个人博客</li>
+                <li>学术文章和研究报告</li>
+                <li>产品文档和帮助页面</li>
+                <li>社交媒体内容（部分支持）</li>
+            </ul>
+
+            <h2>注意事项</h2>
+            <p>使用过程中请注意以下几点：</p>
+            <ul>
+                <li>某些网站可能有反爬虫机制，影响内容提取效果</li>
+                <li>动态加载的内容可能需要等待一段时间</li>
+                <li>请确保网络连接稳定</li>
+                <li>建议在内容完全加载后再使用扩展</li>
+            </ul>
+
+            <div class="highlight">
+                <strong>测试提示：</strong>您可以在此页面上测试墨问笔记助手的内容提取功能。 预期应该能够提取到页面标题、各个章节标题、段落内容、列表项等结构化信息。
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 墨问笔记助手 - 智能内容提取与整理工具</p>
+            <p>如有问题或建议，请通过扩展的反馈功能联系我们。</p>
+        </div>
+    </div>
+
+    <script>
+        // 模拟动态内容加载
+        setTimeout(() => {
+            const dynamicContent = document.createElement('div');
+            dynamicContent.className = 'highlight';
+            dynamicContent.innerHTML = '<strong>动态加载内容：</strong>这段内容是在页面加载2秒后动态添加的，用于测试扩展对动态内容的处理能力。';
+            document.querySelector('.content').appendChild(dynamicContent);
+            console.log('动态内容已加载');
+        }, 2000);
+
+        // 添加页面加载完成标记
+        window.addEventListener('load', () => {
+            console.log('测试页面加载完成，可以开始测试墨问笔记助手');
+        });
+    </script>
+</body>
+
+</html>
