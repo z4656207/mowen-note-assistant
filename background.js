@@ -483,6 +483,7 @@ class MowenNoteHelper {
      */
     buildSummaryPrompt(pageData, settings = {}) {
         const shouldGenerateTags = settings.generateTags === true;
+        const customPrompt = settings.customPrompt || '';
 
         const tagsInstruction = shouldGenerateTags ?
             "4. 为内容生成不超过1-3个相关标签" :
@@ -495,6 +496,15 @@ class MowenNoteHelper {
         const tagsNote = shouldGenerateTags ?
             "- 标签要简洁有意义，不超过3个" :
             "- 不生成标签，tags字段保持为空数组";
+
+        // 构建自定义提示词部分
+        const customPromptSection = customPrompt ?
+            `
+
+**特别要求：**
+${customPrompt}
+
+请在整理内容时特别注意上述要求。` : '';
 
         return `请将以下网页内容整理成适合发布到墨问笔记的格式。
 
@@ -515,7 +525,7 @@ ${pageData.content}
    - 特别重要的信息用高亮格式
    - 保留原文中的链接
 ${tagsInstruction}
-5. 保持内容的逻辑性和可读性
+5. 保持内容的逻辑性和可读性${customPromptSection}
 
 请严格按照以下JSON格式返回结果，不要添加任何其他文字：
 
@@ -552,6 +562,7 @@ ${tagsNote}
      */
     buildFullTextPrompt(pageData, settings = {}) {
         const shouldGenerateTags = settings.generateTags === true;
+        const customPrompt = settings.customPrompt || '';
 
         const tagsInstruction = shouldGenerateTags ?
             "5. 为内容生成不超过1-3个相关标签" :
@@ -564,6 +575,15 @@ ${tagsNote}
         const tagsNote = shouldGenerateTags ?
             "- 标签要简洁有意义，不超过3个" :
             "- 不生成标签，tags字段保持为空数组";
+
+        // 构建自定义提示词部分
+        const customPromptSection = customPrompt ?
+            `
+
+**特别要求：**
+${customPrompt}
+
+请在整理内容时特别注意上述要求。` : '';
 
         return `请将以下网页内容进行格式整理，转换为适合发布到墨问笔记的结构化格式。
 
@@ -585,7 +605,7 @@ ${pageData.content}
    - 保留并优化原文中的链接
 4. 修正明显的格式问题和错误
 ${tagsInstruction}
-6. 保持原文的完整性和准确性
+6. 保持原文的完整性和准确性${customPromptSection}
 
 请严格按照以下JSON格式返回结果，不要添加任何其他文字：
 

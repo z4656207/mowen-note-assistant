@@ -199,7 +199,6 @@ body {
     background: #cbd5e0;
     border-radius: 12px;
     transition: all 0.3s ease;
-    flex-shrink: 0;
 }
 
 .toggle-slider::before {
@@ -233,6 +232,86 @@ body {
     color: #6c757d;
     margin-top: 4px;
     margin-left: 56px;
+}
+
+
+/* 自定义提示词设置 */
+
+.custom-prompt-settings {
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.setting-header {
+    margin-bottom: 16px;
+}
+
+.setting-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 6px;
+}
+
+.setting-title svg {
+    color: #667eea;
+}
+
+.setting-description {
+    font-size: 12px;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+.custom-prompt-input {
+    position: relative;
+}
+
+.custom-prompt-textarea {
+    width: 100%;
+    min-height: 72px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #2d3748;
+    background: #fafafa;
+    resize: vertical;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.custom-prompt-textarea:focus {
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.custom-prompt-textarea::placeholder {
+    color: #a0aec0;
+    font-size: 13px;
+}
+
+.char-counter {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    font-size: 11px;
+    color: #a0aec0;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2px 6px;
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.char-counter.warning {
+    color: #f56565;
 }
 
 

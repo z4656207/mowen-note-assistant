@@ -38,6 +38,7 @@
         <!-- 主要内容区域 -->
         <main class="main">
             <!-- 模式提示 -->
+            <!--
             <div class="mode-indicator">
                 <div class="mode-badge">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -50,7 +51,7 @@
                     点击页面其他位置不会关闭
                 </div>
             </div>
-
+            -->
             <!-- 页面信息预览 -->
             <div id="pageInfo" class="page-info">
                 <div class="page-title" id="pageTitle">正在获取页面信息...</div>
@@ -89,6 +90,28 @@
                     </label>
                     <div class="setting-help">
                         开启后AI将为笔记生成相关标签
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自定义提示词设置 -->
+            <div class="custom-prompt-settings">
+                <div class="setting-header">
+                    <div class="setting-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg> 自定义提示词
+                    </div>
+                    <div class="setting-description">
+                        添加额外的提示信息来指导AI生成更符合需求的内容
+                    </div>
+                </div>
+
+                <div class="custom-prompt-input">
+                    <textarea id="customPromptInput" class="custom-prompt-textarea" placeholder="在此输入自定义提示词，例如：请重点关注技术细节、使用专业术语、突出关键观点等" rows="3" maxlength="500"></textarea>
+                    <div class="char-counter">
+                        <span id="charCount">0</span>/500
                     </div>
                 </div>
             </div>

@@ -20,6 +20,9 @@ class PopupController {
         await this.checkConfiguration();
         await this.loadPublishSettings();
 
+        // 初始化自定义提示词
+        await this.initCustomPrompt();
+
         // 检查是否有正在进行的任务
         await this.checkRunningTask();
 
@@ -97,6 +100,19 @@ class PopupController {
         document.getElementById('generateTagsToggle').addEventListener('change', (e) => {
             this.updateButtonText();
         });
+
+        // 自定义提示词输入框
+        const customPromptInput = document.getElementById('customPromptInput');
+        if (customPromptInput) {
+            // 字符计数功能
+            customPromptInput.addEventListener('input', (e) => {
+                this.updateCharCount(e.target.value);
+                this.saveCustomPrompt(e.target.value);
+            });
+
+            // 初始化字符计数
+            this.updateCharCount(customPromptInput.value);
+        }
 
         // 帮助链接
         document.getElementById('helpLink').addEventListener('click', (e) => {
@@ -440,6 +456,7 @@ class PopupController {
             const autoPublishToggle = document.getElementById('autoPublishToggle');
             const fullTextModeToggle = document.getElementById('fullTextModeToggle');
             const generateTagsToggle = document.getElementById('generateTagsToggle');
+            const customPromptInput = document.getElementById('customPromptInput');
 
             if (autoPublishToggle) {
                 // 设置开关状态，默认为true
@@ -460,6 +477,14 @@ class PopupController {
                 generateTagsToggle.checked = settings.generateTags === true;
             } else {
                 console.warn('generateTagsToggle元素未找到');
+            }
+
+            if (customPromptInput) {
+                // 加载自定义提示词
+                customPromptInput.value = await this.loadCustomPrompt();
+                this.updateCharCount(customPromptInput.value);
+            } else {
+                console.warn('customPromptInput元素未找到');
             }
 
             // 更新按钮文本
@@ -526,6 +551,71 @@ class PopupController {
     }
 
     /**
+     * 更新字符计数显示
+     * @param {string} text - 当前文本内容
+     */
+    updateCharCount(text) {
+        const charCount = document.getElementById('charCount');
+        const counter = document.querySelector('.char-counter');
+
+        if (charCount) {
+            const currentLength = text.length;
+            charCount.textContent = currentLength;
+
+            // 如果接近限制，显示警告颜色
+            if (counter) {
+                if (currentLength > 450) {
+                    counter.classList.add('warning');
+                } else {
+                    counter.classList.remove('warning');
+                }
+            }
+        }
+    }
+
+    /**
+     * 保存自定义提示词到本地存储
+     * @param {string} customPrompt - 自定义提示词
+     */
+    async saveCustomPrompt(customPrompt) {
+        try {
+            await new Promise((resolve) => {
+                chrome.storage.local.set({ customPrompt: customPrompt }, resolve);
+            });
+        } catch (error) {
+            console.error('保存自定义提示词失败:', error);
+        }
+    }
+
+    /**
+     * 加载自定义提示词
+     * @returns {Promise<string>} 自定义提示词
+     */
+    async loadCustomPrompt() {
+        try {
+            const result = await new Promise((resolve) => {
+                chrome.storage.local.get(['customPrompt'], resolve);
+            });
+            return result.customPrompt || '';
+        } catch (error) {
+            console.error('加载自定义提示词失败:', error);
+            return '';
+        }
+    }
+
+    /**
+     * 初始化自定义提示词
+     */
+    async initCustomPrompt() {
+        const customPromptInput = document.getElementById('customPromptInput');
+        if (customPromptInput) {
+            const savedPrompt = await this.loadCustomPrompt();
+            customPromptInput.value = savedPrompt;
+            this.updateCharCount(savedPrompt);
+        }
+    }
+
+    /**
      * 处理提取并发布操作
      */
     async handleExtractAndPublish() {
@@ -552,8 +642,9 @@ class PopupController {
             const autoPublishToggle = document.getElementById('autoPublishToggle');
             const fullTextModeToggle = document.getElementById('fullTextModeToggle');
             const generateTagsToggle = document.getElementById('generateTagsToggle');
+            const customPromptInput = document.getElementById('customPromptInput');
 
-            if (!autoPublishToggle || !fullTextModeToggle || !generateTagsToggle) {
+            if (!autoPublishToggle || !fullTextModeToggle || !generateTagsToggle || !customPromptInput) {
                 console.error('设置元素未找到');
                 this.showStatus('界面初始化失败，请重新打开插件', 'error');
                 return;
@@ -562,6 +653,7 @@ class PopupController {
             const autoPublish = autoPublishToggle.checked;
             const fullTextMode = fullTextModeToggle.checked;
             const generateTags = generateTagsToggle.checked;
+            const customPrompt = customPromptInput.value.trim();
 
             // 生成任务ID
             this.taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -586,7 +678,8 @@ class PopupController {
                 settings: {
                     autoPublish: autoPublish,
                     fullTextMode: fullTextMode,
-                    generateTags: generateTags
+                    generateTags: generateTags,
+                    customPrompt: customPrompt
                 }
             };
 
@@ -611,7 +704,8 @@ class PopupController {
                 settings: {
                     autoPublish: autoPublish,
                     fullTextMode: fullTextMode,
-                    generateTags: generateTags
+                    generateTags: generateTags,
+                    customPrompt: customPrompt
                 }
             }, (response) => {
                 // 注意：这个回调可能不会执行，因为popup可能已经关闭
