@@ -1,4 +1,4 @@
-# 墨问笔记助手 Chrome 插件
+# Mowen Note Assistant (墨问笔记助手)
 
 一个智能的Chrome浏览器插件，可以自动提取网页内容，通过AI整理后发布到墨问笔记。
 
@@ -152,7 +152,7 @@
 ### 文件结构
 
 ```
-mowen-plugin/
+mowen-note-assistant/
 ├── manifest.json          # 插件配置文件
 ├── background.js          # 后台脚本，处理API调用
 ├── content.js            # 内容脚本，提取网页内容

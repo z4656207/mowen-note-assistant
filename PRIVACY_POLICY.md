@@ -94,7 +94,7 @@
 ## 联系我们
 
 如果您对本隐私政策有任何疑问，请通过以下方式联系我们：
-- GitHub Issues：[项目地址](https://github.com/z4656207/mowen-plugin)
+- GitHub Issues：[项目地址](https://github.com/z4656207/mowen-note-assistant)
 - 邮箱：your-email@example.com
 
 ## 法律依据

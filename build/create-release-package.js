@@ -289,7 +289,7 @@ function generateReleaseManifest(zipFilePath, manifest, copiedFiles) {
             files: copiedFiles.sort()
         },
         buildInfo: {
-            buildTool: 'mowen-plugin-build-tool',
+            buildTool: 'mowen-note-assistant-build-tool',
             nodeVersion: process.version,
             platform: process.platform,
             arch: process.arch

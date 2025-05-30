@@ -1,5 +1,5 @@
 {
-    "name": "mowen-chrome-extension",
+    "name": "mowen-note-assistant",
     "version": "1.0.0",
     "description": "墨问笔记助手 Chrome 扩展 - 智能整理网页内容并发布到墨问笔记",
     "private": true,
@@ -24,12 +24,12 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/z4656207/mowen-plugin.git"
+        "url": "https://github.com/z4656207/mowen-note-assistant.git"
     },
     "bugs": {
-        "url": "https://github.com/z4656207/mowen-plugin/issues"
+        "url": "https://github.com/z4656207/mowen-note-assistant/issues"
     },
-    "homepage": "https://github.com/z4656207/mowen-plugin#readme",
+    "homepage": "https://github.com/z4656207/mowen-note-assistant#readme",
     "devDependencies": {
         "archiver": "^7.0.1"
     },

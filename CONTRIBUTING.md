@@ -2,17 +2,18 @@
 
 感谢您对墨问笔记助手的关注！我们欢迎任何形式的贡献。
 
-## 🚀 快速开始
+## 🚀 开始贡献
+
+### 1. Fork 和克隆项目
+
+```bash
+git clone https://github.com/z4656207/mowen-note-assistant.git
+cd mowen-note-assistant
+```
 
 ### 开发环境设置
 
-1. **克隆仓库**
-   ```bash
-   git clone https://github.com/z4656207/mowen-plugin.git
-   cd mowen-plugin
-   ```
-
-2. **安装依赖**
+1. **安装依赖**
    ```bash
    npm install
    ```
@@ -64,17 +65,18 @@
 
 ## 🔧 开发指南
 
-### 项目结构
+### 项目文件结构
 ```
-mowen-plugin/
-├── manifest.json          # 扩展配置
-├── background.js          # 后台脚本
-├── content.js            # 内容脚本
-├── popup.html/js/css     # 弹窗界面
-├── sidepanel.html/js/css # 侧边栏界面
-├── options.html/js/css   # 设置页面
-├── icons/                # 图标资源
-└── docs/                 # 文档
+mowen-note-assistant/
+├── manifest.json          # 插件配置文件
+├── background.js          # 后台脚本，处理API调用
+├── content.js            # 内容脚本，提取网页内容
+├── popup.*               # 弹出窗口相关文件
+├── options.*             # 设置页面相关文件
+├── sidepanel.*           # 侧边栏相关文件
+├── icons/                # 插件图标
+├── build/                # 构建脚本
+└── docs/                 # 项目文档
 ```
 
 ### 核心功能模块
@@ -115,8 +117,8 @@ npm run build
 ## ❓ 获得帮助
 
 - 查看 [文档](docs/)
-- 提交 [Issue](https://github.com/z4656207/mowen-plugin/issues)
-- 参与 [Discussions](https://github.com/z4656207/mowen-plugin/discussions)
+- 提交 [Issue](https://github.com/z4656207/mowen-note-assistant/issues)
+- 参与 [Discussions](https://github.com/z4656207/mowen-note-assistant/discussions)
 
 ## 📝 许可证
 
