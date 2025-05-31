@@ -303,7 +303,7 @@ class MowenNoteHelper {
             const mowenStart = Date.now();
 
             console.log('🚀 开始发布到墨问...');
-            console.log('🏷️ 是否自动发布:', settings.autoPublish !== false);
+            console.log('🏷️ 是否自动发布:', settings.autoPublish === true);
             console.log('🔖 是否生成标签:', settings.generateTags === true);
 
             const mowenResult = await this.publishToMowen(contentResult, config, settings);
@@ -382,7 +382,7 @@ class MowenNoteHelper {
                 }
             }
 
-            const autoPublish = settings.autoPublish !== false;
+            const autoPublish = settings.autoPublish === true;
             const message = autoPublish ? '内容已成功发布到墨问笔记' : '内容未公开';
 
             const result = {
@@ -453,17 +453,16 @@ class MowenNoteHelper {
     }
 
     /**
-     * 处理一键剪藏内容
+     * 处理一键剪藏内容 - 格式优化版本
      * @param {Object} pageData - 页面数据
      * @param {Object} settings - 用户设置
      * @returns {Promise<Object>} 处理后的内容结果
      */
     async processClipContent(pageData, settings = {}) {
-        console.log('📎 开始一键剪藏内容处理...');
+        console.log('📎 开始一键剪藏内容处理（格式优化版）...');
         const startTime = Date.now();
 
         try {
-            // 构建基本的笔记结构
             const result = {
                 title: this.cleanTitle(pageData.title),
                 paragraphs: [],
@@ -471,25 +470,54 @@ class MowenNoteHelper {
                 sourceUrl: pageData.url
             };
 
-            // 处理内容，转换为墨问富文本格式
-            const content = pageData.content || '';
+            // 优先使用结构化内容（保留格式），否则使用传统文本处理
+            if (pageData.structuredContent && pageData.structuredContent.paragraphs &&
+                pageData.structuredContent.paragraphs.length > 0) {
 
-            if (content.trim().length === 0) {
-                // 如果没有内容，创建一个基本段落
-                result.paragraphs.push({
-                    texts: [{
-                        text: '页面内容为空或无法提取到有效内容。'
-                    }]
-                });
+                console.log('✨ 使用结构化内容（保留原始格式）');
+                console.log(`📊 格式统计: ${pageData.structuredContent.formatStats.boldCount} 加粗, ${pageData.structuredContent.formatStats.highlightCount} 高亮, ${pageData.structuredContent.formatStats.linkCount} 链接`);
+
+                // 直接使用结构化内容，已经包含格式信息
+                result.paragraphs = pageData.structuredContent.paragraphs;
+
+                // 验证和统计
+                const processedTextLength = this.calculateProcessedTextLength(result.paragraphs);
+                console.log(`📝 结构化内容: ${result.paragraphs.length} 段落, ${processedTextLength} 字符`);
+
             } else {
-                // 将内容分段并转换格式
-                const paragraphs = this.convertContentToParagraphs(content, pageData);
+                console.log('📝 降级使用传统文本处理');
+                const content = pageData.content || '';
+
+                if (content.trim().length === 0) {
+                    result.paragraphs.push({
+                        texts: [{
+                            text: '页面内容为空或无法提取到有效内容。'
+                        }]
+                    });
+                    return result;
+                }
+
+                console.log(`📝 原始内容长度: ${content.length} 字符`);
+                console.log(`📝 原始内容预览: ${content.substring(0, 500)}...`);
+
+                // 使用简单直接的分段方法
+                const paragraphs = this.simpleContentSplit(content);
                 result.paragraphs = paragraphs;
+
+                // 验证结果
+                const processedTextLength = this.calculateProcessedTextLength(paragraphs);
+                const originalTextLength = content.length;
+                const retentionRate = ((processedTextLength / originalTextLength) * 100).toFixed(1);
+
+                console.log(`📊 处理结果:`);
+                console.log(`  📏 原始内容: ${originalTextLength} 字符`);
+                console.log(`  📏 处理后内容: ${processedTextLength} 字符`);
+                console.log(`  📈 内容保留率: ${retentionRate}%`);
+                console.log(`  📄 生成段落数: ${paragraphs.length}`);
             }
 
             const endTime = Date.now();
-            console.log(`✅ 一键剪藏内容处理完成，耗时: ${endTime - startTime}ms`);
-            console.log(`📄 生成段落数: ${result.paragraphs.length}`);
+            console.log(`✅ 一键剪藏处理完成，耗时: ${endTime - startTime}ms`);
 
             return result;
 
@@ -497,6 +525,290 @@ class MowenNoteHelper {
             console.error('❌ 一键剪藏内容处理失败:', error);
             throw new Error(`一键剪藏处理失败: ${error.message}`);
         }
+    }
+
+    /**
+     * 简单直接的内容分段方法
+     * @param {string} content - 原始内容
+     * @returns {Array} 段落数组
+     */
+    simpleContentSplit(content) {
+        console.log('📝 开始简单内容分段...');
+
+        // 1. 基本清理，保留换行结构
+        let cleanContent = content
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            .replace(/[ \t]+/g, ' ') // 只合并空格，保留换行
+            .trim();
+
+        console.log(`📝 清理后内容长度: ${cleanContent.length} 字符`);
+
+        // 2. 按双换行分段（最常见的网页段落格式）
+        let blocks = cleanContent.split(/\n\s*\n+/);
+        console.log(`📝 双换行分段得到: ${blocks.length} 个块`);
+
+        // 3. 如果双换行分段效果不好，尝试单换行分段
+        if (blocks.length === 1 && cleanContent.includes('\n')) {
+            console.log('📝 双换行分段无效，尝试单换行分段...');
+            blocks = cleanContent.split(/\n/);
+            console.log(`📝 单换行分段得到: ${blocks.length} 个块`);
+        }
+
+        // 4. 过滤和清理块
+        const validBlocks = blocks
+            .map(block => block.trim())
+            .filter(block => {
+                // 只过滤明显无用的内容
+                if (block.length < 3) return false;
+                if (/^(广告|推广|分享|点赞|评论|登录|注册)$/i.test(block)) return false;
+                return true;
+            });
+
+        console.log(`📝 过滤后有效块数: ${validBlocks.length}`);
+
+        // 5. 转换为段落格式
+        const paragraphs = validBlocks.map((block, index) => {
+            return this.createSimpleParagraph(block, index);
+        }).filter(p => p !== null);
+
+        console.log(`📝 最终段落数: ${paragraphs.length}`);
+        return paragraphs;
+    }
+
+    /**
+     * 创建简单段落
+     * @param {string} blockText - 块文本
+     * @param {number} index - 索引
+     * @returns {Object} 段落对象
+     */
+    createSimpleParagraph(blockText, index) {
+        if (!blockText || blockText.trim().length === 0) return null;
+
+        const text = blockText.trim();
+
+        // 检查是否是标题（宽松的判断）
+        const isTitle = this.isSimpleTitle(text, index);
+
+        // 处理链接
+        const textSegments = this.extractSimpleLinks(text);
+
+        const texts = textSegments.map(segment => {
+            const textNode = { text: segment.text };
+
+            // 只对明显的标题加粗
+            if (isTitle && !segment.isLink) {
+                textNode.bold = true;
+            }
+
+            // 添加链接
+            if (segment.isLink) {
+                textNode.link = segment.url;
+            }
+
+            return textNode;
+        });
+
+        return { texts };
+    }
+
+    /**
+     * 简单的标题判断
+     * @param {string} text - 文本
+     * @param {number} index - 段落索引
+     * @returns {boolean} 是否是标题
+     */
+    isSimpleTitle(text, index) {
+        // 长度过长或过短都不太可能是标题
+        if (text.length > 150 || text.length < 4) return false;
+
+        // 包含完整句子的通常不是标题
+        if (text.includes('。') && text.includes('，')) return false;
+
+        // 前几个段落中的短文本更可能是标题
+        if (index <= 2 && text.length <= 80) {
+            return (
+                // 数字序号开头
+                /^[1-9]\d*[\.\s]/.test(text) ||
+                /^[一二三四五六七八九十]\s*[、\.]/.test(text) ||
+                // 章节格式
+                /^第[一二三四五六七八九十\d]+[章节部分条]/.test(text) ||
+                // 短文本且以冒号结尾
+                (text.length <= 50 && text.endsWith('：')) ||
+                // 全大写英文短文本
+                /^[A-Z\s]{4,30}$/.test(text) ||
+                // 标题格式（前面带#号等）
+                /^#+\s+/.test(text)
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * 简单的链接提取
+     * @param {string} text - 文本
+     * @returns {Array} 文本片段数组
+     */
+    extractSimpleLinks(text) {
+        const urlRegex = /(https?:\/\/[^\s\n]+)/g;
+        const segments = [];
+        let lastIndex = 0;
+
+        let match;
+        while ((match = urlRegex.exec(text)) !== null) {
+            // 添加链接前的文本
+            if (match.index > lastIndex) {
+                const beforeText = text.substring(lastIndex, match.index).trim();
+                if (beforeText) {
+                    segments.push({ text: beforeText, isLink: false });
+                }
+            }
+
+            // 添加链接
+            segments.push({
+                text: this.formatLinkText(match[0]),
+                url: match[0],
+                isLink: true
+            });
+
+            lastIndex = match.index + match[0].length;
+        }
+
+        // 添加剩余文本
+        if (lastIndex < text.length) {
+            const remainingText = text.substring(lastIndex).trim();
+            if (remainingText) {
+                segments.push({ text: remainingText, isLink: false });
+            }
+        }
+
+        // 如果没有链接，返回整个文本
+        if (segments.length === 0) {
+            segments.push({ text, isLink: false });
+        }
+
+        return segments;
+    }
+
+    /**
+     * 计算处理后文本的总长度（用于验证内容完整性）
+     */
+    calculateProcessedTextLength(paragraphs) {
+        let totalLength = 0;
+        paragraphs.forEach(paragraph => {
+            if (paragraph.texts) {
+                paragraph.texts.forEach(textItem => {
+                    if (textItem.text) {
+                        totalLength += textItem.text.length;
+                    }
+                });
+            }
+        });
+        return totalLength;
+    }
+
+    /**
+     * 构建墨问API需要的NoteAtom结构 - 简化优化版本
+     * @param {Object} aiResult - AI处理结果
+     * @returns {Object} NoteAtom结构
+     */
+    buildNoteAtom(aiResult) {
+        const content = [];
+
+        // 添加标题段落
+        if (aiResult.title) {
+            content.push({
+                type: "paragraph",
+                content: [{
+                    type: "text",
+                    text: aiResult.title,
+                    marks: [{ type: "bold" }]
+                }]
+            });
+
+            // 标题后添加空行
+            content.push({ type: "paragraph" });
+        }
+
+        // 添加来源链接
+        if (aiResult.sourceUrl) {
+            content.push({
+                type: "paragraph",
+                content: [{
+                        type: "text",
+                        text: "📄 来源：",
+                        marks: [{ type: "bold" }]
+                    },
+                    {
+                        type: "text",
+                        text: "查看原文",
+                        marks: [{
+                            type: "link",
+                            attrs: { href: aiResult.sourceUrl }
+                        }]
+                    }
+                ]
+            });
+            content.push({ type: "paragraph" });
+        }
+
+        // 处理段落内容 - 简化处理，专注内容完整性
+        if (aiResult.paragraphs && Array.isArray(aiResult.paragraphs)) {
+            console.log(`📄 处理 ${aiResult.paragraphs.length} 个段落...`);
+
+            aiResult.paragraphs.forEach((paragraph, index) => {
+                if (!paragraph || !paragraph.texts || !Array.isArray(paragraph.texts)) {
+                    console.warn(`⚠️ 段落 ${index + 1} 格式无效，跳过`);
+                    return;
+                }
+
+                // 过滤空文本节点
+                const validTextNodes = paragraph.texts
+                    .filter(textItem => textItem && textItem.text && textItem.text.trim().length > 0)
+                    .map(textItem => {
+                        const node = {
+                            type: "text",
+                            text: textItem.text
+                        };
+
+                        // 添加格式标记
+                        const marks = [];
+                        if (textItem.bold) marks.push({ type: "bold" });
+                        if (textItem.link) {
+                            marks.push({
+                                type: "link",
+                                attrs: { href: textItem.link }
+                            });
+                        }
+
+                        if (marks.length > 0) {
+                            node.marks = marks;
+                        }
+
+                        return node;
+                    });
+
+                if (validTextNodes.length > 0) {
+                    content.push({
+                        type: "paragraph",
+                        content: validTextNodes
+                    });
+
+                    // 段落间添加适当间距
+                    if (index < aiResult.paragraphs.length - 1) {
+                        content.push({ type: "paragraph" });
+                    }
+                }
+            });
+
+            console.log(`✅ 段落处理完成，最终content长度: ${content.length}`);
+        }
+
+        return {
+            type: "doc",
+            content: content
+        };
     }
 
     /**
@@ -527,6 +839,20 @@ class MowenNoteHelper {
         }
 
         return cleanedTitle || '未命名页面';
+    }
+
+    /**
+     * 格式化链接文本
+     * @param {string} url - URL
+     * @returns {string} 格式化后的链接文本
+     */
+    formatLinkText(url) {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname || '链接';
+        } catch {
+            return '链接';
+        }
     }
 
     /**
@@ -912,16 +1238,6 @@ class MowenNoteHelper {
                 text.includes('import') || text.includes('#include'));
     }
 
-    formatLinkText(url) {
-        // 简化URL显示
-        try {
-            const urlObj = new URL(url);
-            return urlObj.hostname || '链接';
-        } catch {
-            return '链接';
-        }
-    }
-
     /**
      * 处理单个段落
      * @param {string} paragraphText - 段落文本
@@ -1076,16 +1392,6 @@ class MowenNoteHelper {
             if (processingMode === 'ai') {
                 const maxLength = data.fullTextMode ? 15000 : 8000; // 全文模式允许更长内容
 
-                /*
-                console.log('\n📊 === 内容长度检查与预处理 ===');
-                console.log(`📏 当前内容长度: ${processedContent.length} 字符`);
-                console.log(`📏 最大允许长度: ${maxLength} 字符`);
-                console.log(`🎯 全文模式: ${data.fullTextMode ? '是' : '否'}`);
-                console.log(`📄 预处理后完整内容:`);
-                console.log('--- 内容开始 ---');
-                console.log(processedContent);
-                console.log('--- 内容结束 ---');
-                */
                 if (processedContent.length > maxLength) {
                     console.log(`⚠️ 内容过长，需要裁剪`);
 
@@ -1098,38 +1404,10 @@ class MowenNoteHelper {
                     const endPart = words.slice(-keepEnd).join(' ');
 
                     processedContent = startPart + '\n\n[...内容已智能截取...]\n\n' + endPart;
-
-                    /*
-                    console.log(`📄 裁剪后内容长度: ${processedContent.length} 字符`);
-                    console.log(`📄 裁剪后完整内容:`);
-                    console.log('--- 裁剪后内容开始 ---');
-                    console.log(processedContent);
-                    console.log('--- 裁剪后内容结束 ---');
-                    */
-                    // 再次检查长度，如果还是太长就简单截取
-                    /*
-                    if (processedContent.length > maxLength) {
-                        processedContent = processedContent.substring(0, maxLength) + '...[内容截取]';
-                        console.log(`⚠️ 二次截取后长度: ${processedContent.length} 字符`);
-                        console.log(`📄 二次截取后完整内容:`);
-                        console.log('--- 二次截取后内容开始 ---');
-                        console.log(processedContent);
-                        console.log('--- 二次截取后内容结束 ---');
-                    }
-                    */
                 } else {
                     console.log(`✅ 内容长度合适，无需裁剪`);
                 }
                 console.log('='.repeat(50));
-            } else {
-                // 剪藏模式：不进行任何内容截取，保留完整内容
-                /*
-                console.log(`📎 剪藏模式：保留完整内容 (${processedContent.length}字符)`);
-                console.log(`📄 剪藏模式完整内容:`);
-                console.log('--- 内容开始 ---');
-                console.log(processedContent);
-                console.log('--- 内容结束 ---');
-                */
             }
 
             // 4. 清理标题和描述，使用安全的字符串处理
@@ -1291,7 +1569,7 @@ class MowenNoteHelper {
             // 发布到墨问
             const mowenResult = await this.publishToMowen(aiResult, config, settings);
 
-            const autoPublish = settings.autoPublish !== false;
+            const autoPublish = settings.autoPublish === true;
             const message = autoPublish ? '内容已成功发布到墨问笔记' : '内容未公开';
 
             return {
@@ -1915,7 +2193,7 @@ ${tagsNote}`;
                         }
                     });
                     if (itemLength > 0) {
-                        console.log(`  项目${iIndex + 1}总长度: ${itemLength} 字符`);
+                        //console.log(`  项目${iIndex + 1}总长度: ${itemLength} 字符`);
                     }
                 }
             });
@@ -1923,8 +2201,8 @@ ${tagsNote}`;
         console.log(`📏 NoteAtom总文本长度: ${noteAtomTextLength} 字符`);
         console.log('='.repeat(30));
 
-        // 获取自动发布设置，默认为true
-        const autoPublish = settings.autoPublish !== false;
+        // 获取自动发布设置，默认为false（私有发布）
+        const autoPublish = settings.autoPublish === true;
 
         // 根据generateTags设置决定是否传递标签
         const shouldGenerateTags = settings.generateTags === true;
@@ -2008,218 +2286,6 @@ ${tagsNote}`;
         });
 
         return result;
-    }
-
-    /**
-     * 构建墨问API需要的NoteAtom结构
-     * @param {Object} aiResult - AI处理结果
-     * @returns {Object} NoteAtom结构
-     */
-    buildNoteAtom(aiResult) {
-        const content = [];
-
-        // 添加标题段落
-        if (aiResult.title) {
-            content.push({
-                type: "paragraph",
-                content: [{
-                    type: "text",
-                    text: aiResult.title,
-                    marks: [{ type: "bold" }]
-                }]
-            });
-
-            // 标题后添加分隔线和空行
-            content.push({ type: "paragraph" });
-            content.push({
-                type: "paragraph",
-                content: [{
-                    type: "text"
-                }]
-            });
-            //content.push({ type: "paragraph" });
-        }
-
-        // 添加来源链接
-        if (aiResult.sourceUrl) {
-            content.push({
-                type: "paragraph",
-                content: [{
-                        type: "text",
-                        text: "📄 来源：",
-                        marks: [{ type: "bold" }]
-                    },
-                    {
-                        type: "text",
-                        text: "查看原文",
-                        marks: [{
-                            type: "link",
-                            attrs: { href: aiResult.sourceUrl }
-                        }]
-                    }
-                ]
-            });
-
-            // 来源后添加更多空行
-            content.push({ type: "paragraph" });
-            content.push({ type: "paragraph" });
-        }
-
-        // 处理段落内容
-        if (aiResult.paragraphs && Array.isArray(aiResult.paragraphs)) {
-            console.log('\n🔧 === buildNoteAtom段落处理详情 ===');
-            console.log(`📄 准备处理 ${aiResult.paragraphs.length} 个段落`);
-
-            aiResult.paragraphs.forEach((paragraph, index) => {
-                //console.log(`\n🔄 处理段落 ${index + 1}/${aiResult.paragraphs.length}:`);
-                //console.log(`📝 原始段落结构:`, JSON.stringify(paragraph, null, 2));
-
-                if (paragraph.texts && Array.isArray(paragraph.texts)) {
-                    // 检查段落是否包含换行符，如果有则分别处理
-                    const allText = paragraph.texts.map(t => t.text || '').join('');
-                    //console.log(`📏 段落完整文本: "${allText}" (${allText.length}字符)`);
-                    //console.log(`📋 包含换行符: ${allText.includes('\n') ? '是' : '否'}`);
-
-                    if (allText.includes('\n')) {
-                        // 处理包含换行的段落，按换行分割
-                        const lines = allText.split('\n').filter(line => line.trim().length > 0);
-                        //console.log(`📝 分割为 ${lines.length} 行:`);
-
-                        lines.forEach((line, lineIndex) => {
-                            //console.log(`  行${lineIndex + 1}: "${line.trim()}" (${line.trim().length}字符)`);
-                            if (line.trim()) {
-                                const lineNodes = this.buildTextNodesForLine(line.trim(), paragraph.texts);
-                                //console.log(`  生成节点:`, JSON.stringify(lineNodes, null, 2));
-                                content.push({
-                                    type: "paragraph",
-                                    content: lineNodes
-                                });
-
-                                // 行间添加小间距
-                                if (lineIndex < lines.length - 1) {
-                                    content.push({ type: "paragraph" });
-                                    //console.log(`  添加行间空段落`);
-                                }
-                            }
-                        });
-                    } else {
-                        // 处理普通段落
-                        //console.log(`📝 处理为普通段落，包含 ${paragraph.texts.length} 个文本项:`);
-
-                        const textNodes = paragraph.texts.map((textItem, textIndex) => {
-                            //console.log(`  文本项${textIndex + 1}: "${textItem.text || ''}" (${(textItem.text || '').length}字符)`);
-                            //console.log(`    格式: bold=${!!textItem.bold}, link=${!!textItem.link}`);
-
-                            const node = {
-                                type: "text",
-                                text: textItem.text || ''
-                            };
-
-                            // 添加格式标记
-                            const marks = [];
-                            if (textItem.bold) {
-                                marks.push({ type: "bold" });
-                            }
-                            // 移除高亮支持
-                            if (textItem.link) {
-                                marks.push({
-                                    type: "link",
-                                    attrs: { href: textItem.link }
-                                });
-                            }
-
-                            if (marks.length > 0) {
-                                node.marks = marks;
-                            }
-
-                            //console.log(`    生成节点:`, JSON.stringify(node, null, 2));
-                            return node;
-                        }).filter(node => {
-                            const isValid = node.text.trim().length > 0;
-                            if (!isValid) {
-                                //console.log(`    ⚠️ 过滤掉空文本节点: "${node.text}"`);
-                            }
-                            return isValid;
-                        });
-
-                        //console.log(`📊 过滤后有效节点数: ${textNodes.length}`);
-
-                        if (textNodes.length > 0) {
-                            content.push({
-                                type: "paragraph",
-                                content: textNodes
-                            });
-                            //console.log(`✅ 添加段落到content，当前content长度: ${content.length}`);
-                        } else {
-                            //console.warn(`⚠️ 段落 ${index + 1} 被跳过，因为没有有效的文本节点`);
-                        }
-                    }
-
-                    // 段落间添加空行（增加间距）
-                    if (index < aiResult.paragraphs.length - 1) {
-                        content.push({ type: "paragraph" });
-                        //console.log(`📄 添加段落间空行`);
-
-                        // 每隔几个段落添加额外空行，改善可读性
-                        if ((index + 1) % 3 === 0) {
-                            content.push({ type: "paragraph" });
-                            //console.log(`📄 添加额外空行（每3段）`);
-                        }
-                    }
-                } else {
-                    console.warn(`⚠️ 段落 ${index + 1} 没有有效的texts数组:`, paragraph);
-                }
-
-                //console.log(`📊 段落 ${index + 1} 处理完成，当前content总长度: ${content.length}`);
-            });
-
-            console.log(`✅ 所有段落处理完成，最终content长度: ${content.length}`);
-            console.log('='.repeat(50));
-        }
-
-        return {
-            type: "doc",
-            content: content
-        };
-    }
-
-    /**
-     * 为单行文本构建文本节点
-     * @param {string} line - 行文本
-     * @param {Array} originalTexts - 原始文本数组
-     * @returns {Array} 文本节点数组
-     */
-    buildTextNodesForLine(line, originalTexts) {
-        // 检查原始文本中是否有格式信息
-        const hasFormatting = originalTexts.some(t => t.bold || t.link);
-
-        if (!hasFormatting) {
-            return [{
-                type: "text",
-                text: line
-            }];
-        }
-
-        // 如果有格式信息，尝试应用到当前行
-        // 简化处理：如果原文本有加粗，且当前行看起来像标题，则加粗
-        const isTitle = line.length < 50 && (
-            /^[一二三四五六七八九十\d]+[、\.]\s*/.test(line) ||
-            /^第[一二三四五六七八九十\d]+[章节部分条]\s*/.test(line) ||
-            line.endsWith('：')
-        );
-
-        if (isTitle) {
-            return [{
-                type: "text",
-                text: line,
-                marks: [{ type: "bold" }]
-            }];
-        }
-
-        return [{
-            type: "text",
-            text: line
-        }];
     }
 
     /**

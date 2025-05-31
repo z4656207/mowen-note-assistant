@@ -12,25 +12,50 @@ class PopupController {
      * 初始化弹出窗口
      */
     async init() {
-        // 确保DOM完全加载
-        await this.waitForDOM();
+        try {
+            // 版本迁移：清理老版本的autoPublish设置，确保新版本默认为私有发布
+            await this.migrateSettings();
 
-        this.bindEvents();
-        await this.loadPageInfo();
-        await this.checkConfiguration();
-        await this.loadPublishSettings();
+            await this.waitForDOM();
+            this.bindEvents();
+            await this.initProcessingMode();
+            await this.loadPageInfo();
+            await this.loadPublishSettings();
+            await this.initCustomPrompt();
+            this.addCopyFunctionality();
+            this.addForceResetFeature();
+            await this.checkRunningTask();
+        } catch (error) {
+            console.error('初始化失败:', error);
+        }
+    }
 
-        // 初始化自定义提示词
-        await this.initCustomPrompt();
+    /**
+     * 版本迁移：处理设置变更
+     */
+    async migrateSettings() {
+        try {
+            const currentVersion = chrome.runtime.getManifest().version;
+            const result = await new Promise((resolve) => {
+                chrome.storage.local.get(['settingsVersion', 'autoPublish'], resolve);
+            });
 
-        // 检查是否有正在进行的任务
-        await this.checkRunningTask();
+            // 如果是首次安装或者从老版本迁移，重置autoPublish设置
+            if (!result.settingsVersion || result.settingsVersion !== currentVersion) {
+                console.log('检测到版本变更，重置autoPublish设置为默认值（私有发布）');
 
-        // 初始化处理模式
-        await this.initProcessingMode();
+                await new Promise((resolve) => {
+                    chrome.storage.local.set({
+                        settingsVersion: currentVersion,
+                        autoPublish: false // 明确设置为false，确保默认私有发布
+                    }, resolve);
+                });
 
-        // 添加强制重置功能（开发调试用）
-        this.addForceResetFeature();
+                console.log('版本迁移完成：autoPublish已重置为false');
+            }
+        } catch (error) {
+            console.error('版本迁移失败:', error);
+        }
     }
 
     /**
@@ -645,8 +670,8 @@ class PopupController {
             const customPromptInput = document.getElementById('customPromptInput');
 
             if (autoPublishToggle) {
-                // 设置开关状态，默认为true
-                autoPublishToggle.checked = settings.autoPublish !== false;
+                // 设置开关状态，默认为false（私有发布）
+                autoPublishToggle.checked = settings.autoPublish === true;
             } else {}
 
             if (fullTextModeToggle) {
