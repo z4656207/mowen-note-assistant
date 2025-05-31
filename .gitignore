@@ -7,6 +7,7 @@ yarn-error.log*
 # 构建产物和发布包
 build/release/
 build/test-*/
+build/temp/
 *.zip
 *.crx
 *.pem
@@ -15,6 +16,7 @@ build/test-*/
 test*.html
 debug.js
 测试指南.md
+test_mode_switch.html
 
 # 临时和日志文件
 *.log
@@ -59,4 +61,28 @@ PUBLISH_SUCCESS_GUIDE.md
 # 其他临时文件
 .cache/
 .tmp/
-temp/ 
+temp/
+
+# 发布相关（构建后生成的文件）
+release-report.json
+release-notes.txt
+
+# 开发者个人配置
+.vscode/settings.json
+.vscode/launch.json
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-* 

@@ -58,8 +58,47 @@
                 <div class="page-url" id="pageUrl"></div>
             </div>
 
-            <!-- 发布设置 -->
-            <div class="publish-settings">
+            <!-- 处理模式选择 -->
+            <div class="processing-mode">
+                <div class="mode-header">
+                    <h3>处理模式</h3>
+                    <!--<p>选择内容处理方式</p>-->
+                </div>
+                <div class="mode-options">
+                    <label class="mode-option">
+                        <input type="radio" name="processingMode" value="ai" checked>
+                        <div class="mode-card">
+                            <div class="mode-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                            </div>
+                            <div class="mode-content">
+                                <div class="mode-title">AI智能整理</div>
+                                <div class="mode-description">使用AI分析和整理网页内容</div>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="mode-option">
+                        <input type="radio" name="processingMode" value="clip">
+                        <div class="mode-card">
+                            <div class="mode-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                </svg>
+                            </div>
+                            <div class="mode-content">
+                                <div class="mode-title">一键剪藏</div>
+                                <div class="mode-description">直接保存网页内容，无需AI配置</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 通用设置 -->
+            <div class="common-settings">
                 <div class="setting-item">
                     <label class="toggle-label">
                         <input type="checkbox" id="autoPublishToggle" checked>
@@ -70,7 +109,10 @@
                         关闭后笔记将发布为私有
                     </div>
                 </div>
+            </div>
 
+            <!-- AI模式设置 -->
+            <div id="aiModeSettings" class="mode-settings">
                 <div class="setting-item">
                     <label class="toggle-label">
                         <input type="checkbox" id="fullTextModeToggle">
@@ -92,26 +134,43 @@
                         开启后AI将为笔记生成相关标签
                     </div>
                 </div>
-            </div>
 
-            <!-- 自定义提示词设置 -->
-            <div class="custom-prompt-settings">
-                <div class="setting-header">
-                    <div class="setting-title">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg> 自定义提示词
+                <!-- 自定义提示词设置 -->
+                <div class="custom-prompt-settings">
+                    <div class="setting-header">
+                        <div class="setting-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg> 自定义提示词
+                        </div>
+                        <div class="setting-description">
+                            添加额外的提示信息来指导AI生成更符合需求的内容
+                        </div>
                     </div>
-                    <div class="setting-description">
-                        添加额外的提示信息来指导AI生成更符合需求的内容
+
+                    <div class="custom-prompt-input">
+                        <textarea id="customPromptInput" class="custom-prompt-textarea" placeholder="在此输入自定义提示词，例如：请重点关注技术细节、使用专业术语、突出关键观点等" rows="3" maxlength="500"></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/500
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="custom-prompt-input">
-                    <textarea id="customPromptInput" class="custom-prompt-textarea" placeholder="在此输入自定义提示词，例如：请重点关注技术细节、使用专业术语、突出关键观点等" rows="3" maxlength="500"></textarea>
-                    <div class="char-counter">
-                        <span id="charCount">0</span>/500
+            <!-- 剪藏模式设置 -->
+            <div id="clipModeSettings" class="mode-settings" style="display: none;">
+                <div class="clip-mode-info">
+                    <div class="info-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4"></path>
+                            <path d="M12 8h.01"></path>
+                        </svg>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-title">一键剪藏模式</div>
+                        <div class="info-text">直接保存网页内容并转换为墨问富文本格式，保持原有段落结构和基本格式。无需AI配置，仅需墨问API密钥即可使用，完全免费且速度快。</div>
                     </div>
                 </div>
             </div>

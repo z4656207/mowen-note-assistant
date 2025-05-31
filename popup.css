@@ -23,6 +23,7 @@ body {
     overflow-x: hidden;
 }
 
+
 /* 容器 */
 
 .container {
@@ -36,6 +37,7 @@ body {
     display: flex;
     flex-direction: column;
 }
+
 
 /* 头部 */
 
@@ -86,6 +88,7 @@ body {
     justify-content: center;
 }
 
+
 /* 让切换按钮更小更不显眼 */
 
 .toggle-mode-btn {
@@ -108,6 +111,7 @@ body {
     background: rgba(255, 255, 255, 0.25);
 }
 
+
 /* 主要内容 */
 
 .main {
@@ -116,6 +120,7 @@ body {
     display: flex;
     flex-direction: column;
 }
+
 
 /* 页面信息 */
 
@@ -131,10 +136,125 @@ body {
     width: 100%;
 }
 
+
 /* 发布设置 */
 
 .publish-settings {
     margin-bottom: 18px;
+}
+
+
+/* 模式选择 */
+
+.mode-selection {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.mode-option {
+    position: relative;
+    cursor: pointer;
+    display: block;
+}
+
+.mode-option input[type="radio"] {
+    opacity: 0;
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+.mode-option-content {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 16px;
+    background: #fff;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.mode-option input[type="radio"]:checked+.mode-option-content {
+    border-color: #667eea;
+    background: #f8f9ff;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+}
+
+.mode-option-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.mode-option-header svg {
+    flex-shrink: 0;
+    color: #666;
+}
+
+.mode-option input[type="radio"]:checked+.mode-option-content .mode-option-header svg {
+    color: #667eea;
+}
+
+.mode-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.mode-option input[type="radio"]:checked+.mode-option-content .mode-title {
+    color: #667eea;
+}
+
+.mode-description {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+    margin-left: 26px;
+}
+
+
+/* 模式设置区域 */
+
+.ai-mode-settings,
+.clip-mode-settings {
+    transition: opacity 0.3s, max-height 0.3s;
+}
+
+.ai-mode-settings.hidden,
+.clip-mode-settings.hidden {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.setting-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-top: 12px;
+}
+
+.setting-info svg {
+    flex-shrink: 0;
+    color: #666;
+    margin-top: 1px;
+}
+
+.setting-info span {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
 }
 
 .setting-item {
@@ -202,6 +322,7 @@ body {
     margin-top: 8px;
     margin-left: 56px;
 }
+
 
 /* 自定义提示词设置 */
 
@@ -298,6 +419,7 @@ body {
     word-break: break-all;
 }
 
+
 /* 操作按钮 */
 
 .actions {
@@ -371,6 +493,7 @@ body {
     box-shadow: none;
 }
 
+
 /* 状态显示 */
 
 .status {
@@ -408,6 +531,7 @@ body {
     border: 1px solid #ffcc02;
     display: block;
 }
+
 
 /* 进度指示器 */
 
@@ -449,41 +573,40 @@ body {
     text-align: center;
 }
 
+
 /* 结果显示 */
 
 .result {
     background: #f8f9fa;
-    border-radius: 8px;
     border: 1px solid #e9ecef;
-    margin-bottom: 20px;
-    max-height: 380px;
-    display: flex;
-    flex-direction: column;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .result-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
     border-bottom: 1px solid #e9ecef;
-    background: white;
-    border-radius: 8px 8px 0 0;
-    flex-shrink: 0;
 }
 
 .result-header h3 {
-    font-size: 14px;
-    font-weight: 600;
-    color: #333;
     margin: 0;
+    font-size: 16px;
+    color: #333;
+    font-weight: 600;
 }
 
 .close-btn {
     background: none;
     border: none;
-    font-size: 18px;
-    color: #666;
+    font-size: 20px;
+    color: #6c757d;
     cursor: pointer;
     padding: 0;
     width: 24px;
@@ -492,51 +615,204 @@ body {
     align-items: center;
     justify-content: center;
     border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
 .close-btn:hover {
-    background: #f8f9fa;
-    color: #333;
+    background: #e9ecef;
+    color: #495057;
 }
 
 .result-content {
-    padding: 16px;
-    font-size: 13px;
     line-height: 1.5;
-    max-height: 300px;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
-.result-content pre {
-    background: white;
+
+/* 新增：优化的结果显示样式 */
+
+.result-section {
+    margin-bottom: 16px;
     padding: 12px;
-    border-radius: 4px;
-    border: 1px solid #e9ecef;
-    overflow-x: auto;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.result-section:last-child {
+    margin-bottom: 0;
+}
+
+.success-section {
+    background: #d4edda;
+    border-left-color: #28a745;
+}
+
+.ai-section {
+    background: #e3f2fd;
+    border-left-color: #2196f3;
+}
+
+.quality-section {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.performance-section {
+    background: #f8f9fa;
+    border-left-color: #6c757d;
+}
+
+.performance-section.expanded .collapsible-content {
+    display: block;
+}
+
+.time-section {
+    background: #f5f5f5;
+    border-left-color: #6c757d;
+}
+
+.result-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.result-title.collapsible {
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.result-title.collapsible:hover {
+    color: #007bff;
+}
+
+.collapse-indicator {
+    margin-left: auto;
     font-size: 12px;
-    margin: 8px 0;
+    transition: transform 0.2s ease;
 }
 
-/* 自定义滚动条样式 */
-
-.result-content::-webkit-scrollbar {
-    width: 6px;
+.performance-section.expanded .collapse-indicator {
+    transform: rotate(180deg);
 }
 
-.result-content::-webkit-scrollbar-track {
-    background: #f1f1f1;
+.collapsible-content {
+    display: none;
+    overflow: hidden;
+}
+
+.result-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: #495057;
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: #333;
+    flex: 1;
+    word-break: break-word;
+}
+
+.detail-value.selectable {
+    background: #e9ecef;
+    padding: 2px 6px;
     border-radius: 3px;
+    font-family: monospace;
+    font-size: 12px;
+    transition: background 0.2s ease;
 }
 
-.result-content::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
+.detail-value.selectable:hover {
+    background: #dee2e6;
 }
 
-.result-content::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+.detail-value.warning {
+    color: #dc3545;
+    font-weight: 500;
 }
+
+.detail-value.notice {
+    color: #fd7e14;
+    font-weight: 500;
+}
+
+.no-value {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.tag {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+
+/* 复制提示样式 */
+
+.copy-tooltip {
+    animation: fadeInOut 1s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    80% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+}
+
+
+/* 响应式调整 */
+
+@media (max-width: 400px) {
+    .result {
+        max-height: 300px;
+    }
+    .detail-item {
+        flex-direction: column;
+        gap: 2px;
+    }
+    .detail-label {
+        min-width: auto;
+    }
+}
+
 
 /* 底部 */
 
@@ -565,6 +841,7 @@ body {
     color: #667eea;
 }
 
+
 /* 响应式调整 */
 
 @media (max-width: 420px) {
@@ -589,6 +866,7 @@ body {
     }
 }
 
+
 /* 加载动画 */
 
 .loading {
@@ -609,6 +887,7 @@ body {
         transform: rotate(360deg);
     }
 }
+
 
 /* 工具提示 */
 
@@ -639,6 +918,7 @@ body {
     visibility: visible;
     opacity: 1;
 }
+
 
 /* 自定义帮助弹框样式 */
 
@@ -787,6 +1067,7 @@ body {
     font-size: 13px;
     color: #2d3748;
 }
+
 
 /* 响应式调整 */
 
