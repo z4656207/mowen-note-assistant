@@ -16,15 +16,32 @@ class OptionsController {
      * 绑定事件监听器
      */
     bindEvents() {
-        // 表单提交
-        document.getElementById('configForm').addEventListener('submit', (e) => {
+        // 墨问配置表单提交
+        document.getElementById('mowenConfigForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            this.saveSettings();
+            this.saveMowenSettings();
         });
 
-        // 测试连接按钮
-        document.getElementById('testBtn').addEventListener('click', () => {
-            this.testConnection();
+        // AI配置表单提交
+        document.getElementById('aiConfigForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveAiSettings();
+        });
+
+        // 高级设置表单提交
+        document.getElementById('advancedConfigForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveAdvancedSettings();
+        });
+
+        // 测试墨问连接按钮
+        document.getElementById('testMowenBtn').addEventListener('click', () => {
+            this.testMowenConnection();
+        });
+
+        // 测试AI连接按钮
+        document.getElementById('testAiBtn').addEventListener('click', () => {
+            this.testAiConnection();
         });
 
         // 重置设置按钮
@@ -42,7 +59,14 @@ class OptionsController {
         const inputs = document.querySelectorAll('.form-input');
         inputs.forEach(input => {
             input.addEventListener('input', () => {
-                this.clearStatus();
+                // 根据输入框所在的配置区域清除对应的状态
+                if (input.id === 'mowenApiKey') {
+                    this.clearMowenStatus();
+                } else if (input.id === 'aiApiUrl' || input.id === 'aiApiKey' || input.id === 'aiModel') {
+                    this.clearAiStatus();
+                } else {
+                    this.clearStatus();
+                }
             });
         });
 
@@ -122,7 +146,6 @@ class OptionsController {
             }
 
             // 设置复选框
-            document.getElementById('autoPublish').checked = settings.autoPublish !== false;
             document.getElementById('includeSource').checked = settings.includeSource !== false;
 
             this.showStatus('设置已加载', 'success');
@@ -143,7 +166,6 @@ class OptionsController {
                 'aiApiKey',
                 'aiModel',
                 'mowenApiKey',
-                'autoPublish',
                 'includeSource'
             ], (result) => {
                 resolve(result);
@@ -152,113 +174,180 @@ class OptionsController {
     }
 
     /**
-     * 保存设置
+     * 保存墨问配置
      */
-    async saveSettings() {
+    async saveMowenSettings() {
         try {
-            // 获取表单数据
-            const formData = new FormData(document.getElementById('configForm'));
-            const settings = {};
+            // 获取墨问配置数据
+            const mowenApiKey = document.getElementById('mowenApiKey').value.trim();
 
-            // 处理文本输入
-            for (const [key, value] of formData.entries()) {
-                if (value.trim()) {
-                    settings[key] = value.trim();
-                }
-            }
-
-            // 处理复选框
-            settings.autoPublish = document.getElementById('autoPublish').checked;
-            settings.includeSource = document.getElementById('includeSource').checked;
-
-            // 验证必填字段
-            const requiredFields = ['aiApiUrl', 'aiApiKey', 'aiModel', 'mowenApiKey'];
-            const missingFields = requiredFields.filter(field => !settings[field]);
-
-            if (missingFields.length > 0) {
-                this.showStatus(`请填写必填字段: ${missingFields.join(', ')}`, 'error');
-                return;
-            }
-
-            // 验证URL格式
-            try {
-                new URL(settings.aiApiUrl);
-            } catch (error) {
-                this.showStatus('AI API地址格式不正确', 'error');
+            // 验证必填字段 - 只校验墨问API key
+            if (!mowenApiKey) {
+                this.showMowenStatus('请填写墨问API密钥', 'error');
                 return;
             }
 
             // 保存到存储
-            await this.saveToStorage(settings);
+            await this.saveToStorage({ mowenApiKey });
 
-            this.showStatus('设置已保存', 'success');
+            this.showMowenStatus('墨问配置已保存', 'success');
 
         } catch (error) {
-            console.error('保存设置失败:', error);
-            this.showStatus('保存设置失败: ' + error.message, 'error');
+            console.error('保存墨问配置失败:', error);
+            this.showMowenStatus('保存墨问配置失败: ' + error.message, 'error');
         }
     }
 
     /**
-     * 保存设置到存储
+     * 保存AI配置
      */
-    async saveToStorage(settings) {
-        return new Promise((resolve, reject) => {
-            chrome.storage.sync.set(settings, () => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                } else {
-                    resolve();
-                }
-            });
-        });
-    }
-
-    /**
-     * 测试连接
-     */
-    async testConnection() {
+    async saveAiSettings() {
         try {
-            // 获取当前表单数据
+            // 获取AI配置数据
             const aiApiUrl = document.getElementById('aiApiUrl').value.trim();
             const aiApiKey = document.getElementById('aiApiKey').value.trim();
             const aiModel = document.getElementById('aiModel').value.trim();
+
+            const settings = {};
+
+            // 只保存非空字段
+            if (aiApiUrl) {
+                // 验证URL格式
+                try {
+                    new URL(aiApiUrl);
+                    settings.aiApiUrl = aiApiUrl;
+                } catch (error) {
+                    this.showAiStatus('AI API地址格式不正确', 'error');
+                    return;
+                }
+            }
+
+            if (aiApiKey) {
+                settings.aiApiKey = aiApiKey;
+            }
+
+            if (aiModel) {
+                settings.aiModel = aiModel;
+            }
+
+            // 保存到存储
+            if (Object.keys(settings).length > 0) {
+                await this.saveToStorage(settings);
+                this.showAiStatus('AI配置已保存', 'success');
+            } else {
+                this.showAiStatus('请填写至少一个AI配置项', 'warning');
+            }
+
+        } catch (error) {
+            console.error('保存AI配置失败:', error);
+            this.showAiStatus('保存AI配置失败: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 保存高级设置
+     */
+    async saveAdvancedSettings() {
+        try {
+            // 获取高级设置
+            const settings = {
+                includeSource: document.getElementById('includeSource').checked
+            };
+
+            // 保存到存储
+            await this.saveToStorage(settings);
+
+            this.showStatus('高级设置已保存', 'success');
+
+        } catch (error) {
+            console.error('保存高级设置失败:', error);
+            this.showStatus('保存高级设置失败: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 测试墨问连接
+     */
+    async testMowenConnection() {
+        try {
+            // 获取当前墨问配置
             const mowenApiKey = document.getElementById('mowenApiKey').value.trim();
 
-            if (!aiApiUrl || !aiApiKey || !aiModel || !mowenApiKey) {
-                this.showStatus('请先填写所有必填字段', 'warning');
+            if (!mowenApiKey) {
+                this.showMowenStatus('请先填写墨问API密钥', 'warning');
                 return;
             }
 
             // 显示测试状态
-            const testBtn = document.getElementById('testBtn');
+            const testBtn = document.getElementById('testMowenBtn');
             const originalText = testBtn.innerHTML;
             testBtn.innerHTML = '<div class="loading"></div> 测试中...';
             testBtn.disabled = true;
 
-            // 测试AI API
-            this.showStatus('正在测试AI API连接...', 'info');
-            await this.testAIAPI(aiApiUrl, aiApiKey, aiModel);
-
             // 测试墨问API
-            this.showStatus('正在测试墨问API连接...', 'info');
+            this.showMowenStatus('正在测试墨问API连接...', 'info');
             await this.testMowenAPI(mowenApiKey);
 
-            this.showStatus('所有API连接测试成功！', 'success');
+            this.showMowenStatus('墨问API连接测试成功！', 'success');
 
         } catch (error) {
-            console.error('测试连接失败:', error);
-            this.showStatus('连接测试失败: ' + error.message, 'error');
+            console.error('测试墨问连接失败:', error);
+            this.showMowenStatus('墨问连接测试失败: ' + error.message, 'error');
         } finally {
             // 恢复按钮状态
-            const testBtn = document.getElementById('testBtn');
+            const testBtn = document.getElementById('testMowenBtn');
             testBtn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 12l2 2 4-4"></path>
           <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
           <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
         </svg>
-        测试连接
+        测试墨问连接
+      `;
+            testBtn.disabled = false;
+        }
+    }
+
+    /**
+     * 测试AI连接
+     */
+    async testAiConnection() {
+        try {
+            // 获取当前AI配置
+            const aiApiUrl = document.getElementById('aiApiUrl').value.trim();
+            const aiApiKey = document.getElementById('aiApiKey').value.trim();
+            const aiModel = document.getElementById('aiModel').value.trim();
+
+            if (!aiApiUrl || !aiApiKey || !aiModel) {
+                this.showAiStatus('请先填写所有AI配置字段', 'warning');
+                return;
+            }
+
+            // 显示测试状态
+            const testBtn = document.getElementById('testAiBtn');
+            const originalText = testBtn.innerHTML;
+            testBtn.innerHTML = '<div class="loading"></div> 测试中...';
+            testBtn.disabled = true;
+
+            // 测试AI API
+            this.showAiStatus('正在测试AI API连接...', 'info');
+            await this.testAIAPI(aiApiUrl, aiApiKey, aiModel);
+
+            this.showAiStatus('AI API连接测试成功！', 'success');
+
+        } catch (error) {
+            console.error('测试AI连接失败:', error);
+            this.showAiStatus('AI连接测试失败: ' + error.message, 'error');
+        } finally {
+            // 恢复按钮状态
+            const testBtn = document.getElementById('testAiBtn');
+            testBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 12l2 2 4-4"></path>
+          <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+          <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+        </svg>
+        测试AI连接
       `;
             testBtn.disabled = false;
         }
@@ -377,7 +466,6 @@ class OptionsController {
             document.getElementById('configForm').reset();
 
             // 重置复选框为默认值
-            document.getElementById('autoPublish').checked = true;
             document.getElementById('includeSource').checked = true;
 
             this.showStatus('设置已重置', 'success');
@@ -408,6 +496,46 @@ class OptionsController {
      */
     showStatus(message, type = 'info') {
         const statusEl = document.getElementById('status');
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`;
+        statusEl.style.display = 'block';
+
+        // 添加淡入动画
+        statusEl.classList.add('fade-in');
+
+        // 自动隐藏成功消息
+        if (type === 'success') {
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    /**
+     * 显示墨问配置状态消息
+     */
+    showMowenStatus(message, type = 'info') {
+        const statusEl = document.getElementById('mowenStatus');
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`;
+        statusEl.style.display = 'block';
+
+        // 添加淡入动画
+        statusEl.classList.add('fade-in');
+
+        // 自动隐藏成功消息
+        if (type === 'success') {
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    /**
+     * 显示AI配置状态消息
+     */
+    showAiStatus(message, type = 'info') {
+        const statusEl = document.getElementById('aiStatus');
         statusEl.textContent = message;
         statusEl.className = `status ${type}`;
         statusEl.style.display = 'block';
@@ -457,6 +585,37 @@ class OptionsController {
     `;
 
         alert(aboutContent);
+    }
+
+    /**
+     * 保存设置到存储
+     */
+    async saveToStorage(settings) {
+        return new Promise((resolve, reject) => {
+            chrome.storage.sync.set(settings, () => {
+                if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    /**
+     * 清除墨问状态
+     */
+    clearMowenStatus() {
+        const statusEl = document.getElementById('mowenStatus');
+        statusEl.style.display = 'none';
+    }
+
+    /**
+     * 清除AI状态
+     */
+    clearAiStatus() {
+        const statusEl = document.getElementById('aiStatus');
+        statusEl.style.display = 'none';
     }
 }
 

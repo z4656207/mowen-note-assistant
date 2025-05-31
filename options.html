@@ -20,9 +20,8 @@
 
         <!-- 主要内容 -->
         <main class="main">
-            <!-- 配置表单 -->
-            <form id="configForm" class="config-form">
-
+            <!-- 墨问API配置表单 -->
+            <form id="mowenConfigForm" class="config-form">
                 <!-- 墨问API配置 -->
                 <section class="config-section">
                     <h2 class="section-title">
@@ -58,34 +57,53 @@
                             <a href="https://open.mowen.cn" target="_blank" rel="noopener" class="help-link">获取API密钥</a>
                         </div>
                     </div>
-                </section>
 
+                    <!-- 墨问配置操作按钮 -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                保存墨问配置
+              </button>
+
+                        <button type="button" id="testMowenBtn" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4"></path>
+                  <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+                  <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+                </svg>
+                测试墨问连接
+              </button>
+                    </div>
+
+                    <!-- 墨问配置状态显示 -->
+                    <div id="mowenStatus" class="status" style="display: none;"></div>
+                </section>
+            </form>
+
+            <!-- AI模型配置表单 -->
+            <form id="aiConfigForm" class="config-form">
                 <!-- AI模型配置 -->
                 <section class="config-section">
                     <h2 class="section-title">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-            </svg> AI模型配置（一键剪藏功能可不配置）
+            </svg> AI模型配置（智能整理功能，可选配置）
                     </h2>
 
                     <div class="form-group">
-                        <label for="aiApiUrl" class="form-label">
-              AI API地址
-              <span class="required">*</span>
-            </label>
-                        <input type="url" id="aiApiUrl" name="aiApiUrl" class="form-input" placeholder="https://api.openai.com/v1/chat/completions" required>
+                        <label for="aiApiUrl" class="form-label">AI API地址</label>
+                        <input type="url" id="aiApiUrl" name="aiApiUrl" class="form-input" placeholder="https://api.openai.com/v1/chat/completions">
                         <div class="form-help">
                             支持OpenAI兼容的API接口，如deepseek、OpenAI、Claude等
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="aiApiKey" class="form-label">
-              AI API密钥
-              <span class="required">*</span>
-            </label>
+                        <label for="aiApiKey" class="form-label">AI API密钥</label>
                         <div class="password-input-wrapper">
-                            <input type="password" id="aiApiKey" name="aiApiKey" class="form-input password-input" placeholder="sk-..." required>
+                            <input type="password" id="aiApiKey" name="aiApiKey" class="form-input password-input" placeholder="sk-...">
                             <button type="button" class="password-toggle" data-target="aiApiKey" title="显示/隐藏密钥">
                                 <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -103,19 +121,39 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="aiModel" class="form-label">
-              AI模型名称
-              <span class="required">*</span>
-            </label>
-                        <input type="text" id="aiModel" name="aiModel" class="form-input" placeholder="gpt-3.5-turbo" required>
+                        <label for="aiModel" class="form-label">AI模型名称</label>
+                        <input type="text" id="aiModel" name="aiModel" class="form-input" placeholder="gpt-3.5-turbo">
                         <div class="form-help">
                             模型名称，如：deepseek-chat、gpt-3.5-turbo、gpt-4、claude-3-sonnet等
                         </div>
                     </div>
+
+                    <!-- AI配置操作按钮 -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                保存AI配置
+              </button>
+
+                        <button type="button" id="testAiBtn" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4"></path>
+                  <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+                  <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+                </svg>
+                测试AI连接
+              </button>
+                    </div>
+
+                    <!-- AI配置状态显示 -->
+                    <div id="aiStatus" class="status" style="display: none;"></div>
                 </section>
+            </form>
 
-
-
+            <!-- 高级设置表单 -->
+            <form id="advancedConfigForm" class="config-form">
                 <!-- 高级设置 -->
                 <section class="config-section">
                     <h2 class="section-title">
@@ -127,17 +165,6 @@
 
                     <div class="form-group">
                         <label class="checkbox-label">
-              <input type="checkbox" id="autoPublish" name="autoPublish" checked>
-              <span class="checkbox-custom"></span>
-              发布公开笔记
-            </label>
-                        <div class="form-help">
-                            创建笔记后发布为公开，否则发布为私有
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="checkbox-label">
               <input type="checkbox" id="includeSource" name="includeSource" checked>
               <span class="checkbox-custom"></span>
               包含来源链接
@@ -146,34 +173,25 @@
                             在笔记中包含原网页链接
                         </div>
                     </div>
+
+                    <!-- 高级设置操作按钮 -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+                保存高级设置
+              </button>
+
+                        <button type="button" id="resetBtn" class="btn btn-danger">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3,6 5,6 21,6"></polyline>
+                  <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                </svg>
+                重置所有设置
+              </button>
+                    </div>
                 </section>
-
-                <!-- 操作按钮 -->
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20,6 9,17 4,12"></polyline>
-            </svg>
-            保存设置
-          </button>
-
-                    <button type="button" id="testBtn" class="btn btn-secondary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 12l2 2 4-4"></path>
-              <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
-              <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
-            </svg>
-            测试连接
-          </button>
-
-                    <button type="button" id="resetBtn" class="btn btn-danger">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3,6 5,6 21,6"></polyline>
-              <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
-            </svg>
-            重置设置
-          </button>
-                </div>
             </form>
 
             <!-- 状态显示 -->
