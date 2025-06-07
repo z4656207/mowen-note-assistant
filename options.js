@@ -426,28 +426,40 @@ class OptionsController {
             })
         });
 
-        // 如果返回401，说明API密钥无效
-        if (response.status === 401) {
-            throw new Error('墨问API密钥无效或已过期');
-        }
-
-        // 如果返回403，可能是权限问题或配额问题
-        if (response.status === 403) {
-            const errorText = await response.text();
-            if (errorText.includes('Quota')) {
-                throw new Error('墨问API配额不足');
+        if (!response.ok) { // Handles 4xx and 5xx errors
+            if (response.status === 400) {
+                try {
+                    const errorData = await response.json();
+                    if (errorData && (errorData.reason === "LOGIN" || (errorData.message && errorData.message.toLowerCase().includes("invalid api key")))) {
+                        throw new Error('墨问API密钥无效或已过期 (400 Bad Request)');
+                    }
+                    // If it's a 400 but NOT the specific API key error, we consider it a "successful" test ping.
+                    // So, we do nothing here, and it won't be caught by the generic error below.
+                    // The function will then successfully complete.
+                } catch (e) {
+                    // This catch is for JSON parsing errors or if the specific error was thrown above
+                    if (e.message.includes('墨问API密钥无效或已过期')) throw e;
+                    // If JSON parsing failed for a 400 that wasn't the specific API key error,
+                    // we can still treat it as a "successful" ping for the test's purpose.
+                    // Or, throw a more generic 400 error:
+                    // throw new Error(`墨问API测试数据问题 (400): ${await response.text()}`);
+                    // For now, let's stick to the original logic: a 400 not matching the API key issue is "ok for test".
+                }
+            } else if (response.status === 401) {
+                throw new Error('墨问API密钥无效或已过期');
+            } else if (response.status === 403) {
+                const errorText = await response.text(); // Ensure to await text() if used
+                if (errorText.includes('Quota')) {
+                    throw new Error('墨问API配额不足');
+                } else {
+                    throw new Error('墨问API权限不足，请检查是否为Pro会员');
+                }
             } else {
-                throw new Error('墨问API权限不足，请检查是否为Pro会员');
+                // For any other error that is not 2xx and not the "good" 400
+                throw new Error(`墨问API测试失败: ${response.status} ${response.statusText}`);
             }
         }
-
-        // 其他错误状态
-        if (!response.ok && response.status !== 400) {
-            throw new Error(`墨问API测试失败: ${response.status} ${response.statusText}`);
-        }
-
-        // 400错误可能是因为测试数据格式问题，但说明API密钥是有效的
-        // 200或400都表示连接成功
+        // If response.ok is true (2xx), or if it was a 400 not caught above, we reach here, indicating success.
     }
 
     /**
