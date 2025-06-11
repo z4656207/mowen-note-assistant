@@ -207,6 +207,8 @@
     function extractTextWithStructure(element) {
         const paragraphs = [];
         let currentParagraph = { texts: [] };
+        const images = []; // 存储图片信息
+        let imageCounter = 0; // 图片计数器
 
         function processNode(node, inheritedStyles = {}) {
             if (node.nodeType === Node.TEXT_NODE) {
@@ -262,6 +264,22 @@
                     }
                 }
 
+                // 处理图片元素
+                if (tagName === 'img') {
+                    // 检查是否启用图片处理（通过全局变量或其他方式）
+                    // 由于content script无法直接访问storage，这个检查将在后台脚本中处理
+                    // 这里始终提取图片信息，由后台脚本根据设置决定是否处理
+                    const imgInfo = extractImageInfo(node, imageCounter);
+                    if (imgInfo) {
+                        console.log(`📸 收集图片 ${imageCounter + 1}:`, imgInfo);
+                        images.push(imgInfo);
+                        // 在当前位置插入图片占位符
+                        insertImagePlaceholder(currentParagraph, imgInfo, paragraphs);
+                        imageCounter++;
+                    }
+                    return; // 图片处理完毕，不继续处理子节点
+                }
+
                 // 块级元素：结束当前段落，开始新段落
                 if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'section', 'article', 'li', 'blockquote'].includes(tagName)) {
                     // 保存当前段落（如果有内容）
@@ -276,8 +294,10 @@
                     }
 
                     // 递归处理子节点
-                    for (const child of node.childNodes) {
-                        processNode(child, currentStyles);
+                    if (node.childNodes) {
+                        for (const child of node.childNodes) {
+                            processNode(child, currentStyles);
+                        }
                     }
 
                     // 结束当前段落
@@ -298,8 +318,10 @@
                 }
 
                 // 内联元素和其他元素：递归处理子节点，保持在当前段落
-                for (const child of node.childNodes) {
-                    processNode(child, currentStyles);
+                if (node.childNodes) {
+                    for (const child of node.childNodes) {
+                        processNode(child, currentStyles);
+                    }
                 }
 
                 // 对于某些内联元素，在后面添加空格
@@ -322,15 +344,35 @@
 
         // 清理和优化段落
         const cleanedParagraphs = paragraphs
-            .map(paragraph => ({
-                texts: paragraph.texts
-                    .filter(text => text.text && text.text.trim().length > 0)
-                    .map(text => ({
-                        ...text,
-                        text: text.text.trim()
-                    }))
-            }))
-            .filter(paragraph => paragraph.texts.length > 0);
+            .filter(paragraph => {
+                // 保留图片占位符和有内容的文本段落
+                if (paragraph.type === 'image-placeholder') {
+                    return true;
+                }
+                return paragraph && paragraph.texts && Array.isArray(paragraph.texts);
+            })
+            .map(paragraph => {
+                // 图片占位符直接返回
+                if (paragraph.type === 'image-placeholder') {
+                    return paragraph;
+                }
+                // 文本段落需要清理
+                return {
+                    texts: paragraph.texts
+                        .filter(text => text && text.text && text.text.trim().length > 0)
+                        .map(text => ({
+                            ...text,
+                            text: text.text.trim()
+                        }))
+                };
+            })
+            .filter(paragraph => {
+                // 保留图片占位符和有内容的文本段落
+                if (paragraph.type === 'image-placeholder') {
+                    return true;
+                }
+                return paragraph.texts && paragraph.texts.length > 0;
+            });
 
         console.log(`📝 格式化提取完成: ${cleanedParagraphs.length} 个段落`);
 
@@ -339,17 +381,39 @@
             highlightCount = 0,
             linkCount = 0;
         cleanedParagraphs.forEach(p => {
-            p.texts.forEach(t => {
-                if (t.bold) boldCount++;
-                if (t.highlight) highlightCount++;
-                if (t.link) linkCount++;
-            });
+            // 只对文本段落统计格式信息，跳过图片占位符
+            if (p.texts && Array.isArray(p.texts)) {
+                p.texts.forEach(t => {
+                    if (t.bold) boldCount++;
+                    if (t.highlight) highlightCount++;
+                    if (t.link) linkCount++;
+                });
+            }
         });
         console.log(`🎨 格式统计: ${boldCount} 个加粗, ${highlightCount} 个高亮, ${linkCount} 个链接`);
 
+        // 输出图片统计信息
+        if (images.length > 0) {
+            console.log(`🖼️ 图片统计: 发现 ${images.length} 个图片`);
+            images.forEach((img, index) => {
+                console.log(`  图片 ${index + 1}: ${img.src.substring(0, 100)}... (${img.width}x${img.height})`);
+            });
+        }
+
+        // 输出最终的段落结构（包含图片占位符）
+        console.log(`🔍 最终段落结构:`, cleanedParagraphs.length, '个段落');
+        cleanedParagraphs.forEach((p, i) => {
+            if (p.type === 'image-placeholder') {
+                console.log(`  段落 ${i}: 图片占位符 (imageId: ${p.imageId})`);
+            } else {
+                console.log(`  段落 ${i}: 文本段落 (${p.texts?.length || 0} 个文本节点)`);
+            }
+        });
+
         return {
             paragraphs: cleanedParagraphs,
-            formatStats: { boldCount, highlightCount, linkCount }
+            formatStats: { boldCount, highlightCount, linkCount },
+            images: images // 添加图片信息
         };
     }
 
@@ -365,6 +429,7 @@
 
         if (structuredContent && structuredContent.paragraphs) {
             return structuredContent.paragraphs
+                .filter(paragraph => paragraph.texts && Array.isArray(paragraph.texts))
                 .map(paragraph =>
                     paragraph.texts.map(text => text.text).join('')
                 )
@@ -372,6 +437,117 @@
         }
 
         return '';
+    }
+
+    /**
+     * 提取图片信息
+     * @param {HTMLImageElement} imgElement - 图片元素
+     * @param {number} position - 图片在内容中的位置
+     * @returns {Object|null} 图片信息对象或null
+     */
+    function extractImageInfo(imgElement, position) {
+        const src = imgElement.src;
+        if (!src || !shouldIncludeImage(imgElement)) {
+            return null;
+        }
+
+        // 计算图片尺寸
+        const width = imgElement.naturalWidth || imgElement.width || 0;
+        const height = imgElement.naturalHeight || imgElement.height || 0;
+
+        return {
+            id: `img_${position}`, // 唯一标识符
+            src: src,
+            alt: imgElement.alt || '',
+            width: width,
+            height: height,
+            position: position,
+            className: imgElement.className,
+            // 记录图片周围的上下文信息，用于确定对齐方式
+            parentElement: {
+                tagName: imgElement.parentElement && imgElement.parentElement.tagName ? imgElement.parentElement.tagName.toLowerCase() : '',
+                className: imgElement.parentElement && imgElement.parentElement.className ? imgElement.parentElement.className : '',
+                textAlign: window.getComputedStyle(imgElement.parentElement || imgElement).textAlign
+            }
+        };
+    }
+
+    /**
+     * 判断是否应该包含该图片
+     * @param {HTMLImageElement} imgElement - 图片元素
+     * @returns {boolean} 是否应该包含
+     */
+    function shouldIncludeImage(imgElement) {
+        const src = imgElement.src;
+        const width = imgElement.naturalWidth || imgElement.width || 0;
+        const height = imgElement.naturalHeight || imgElement.height || 0;
+        const className = (imgElement.className || '').toLowerCase();
+        const alt = (imgElement.alt || '').toLowerCase();
+
+        // 基本过滤条件
+        if (!src || src === '') return false;
+        if (src.startsWith('data:')) return false; // 跳过base64图片
+
+        // 尺寸过滤
+        if (width > 0 && height > 0 && (width < 50 || height < 50)) return false;
+
+        // 装饰性图片过滤
+        const decorativeKeywords = ['icon', 'logo', 'avatar', 'emoji', 'bullet', 'arrow', 'star', 'heart'];
+        if (decorativeKeywords.some(keyword =>
+                (className && className.includes(keyword)) ||
+                (alt && alt.includes(keyword))
+            )) {
+            return false;
+        }
+
+        // 广告和无关内容过滤
+        const adKeywords = ['ad', 'ads', 'advertisement', 'sponsor', 'promo', 'banner'];
+        if (adKeywords.some(keyword =>
+                (className && className.includes(keyword)) ||
+                (alt && alt.includes(keyword))
+            )) {
+            return false;
+        }
+
+        // 检查父元素，过滤导航和工具栏中的图片
+        const parent = imgElement.parentElement;
+        if (parent) {
+            const parentClass = (parent.className || '').toLowerCase();
+            const navKeywords = ['nav', 'menu', 'toolbar', 'header', 'footer', 'sidebar'];
+            if (navKeywords.some(keyword => parentClass.includes(keyword))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 在当前段落中插入图片占位符
+     * @param {Object} currentParagraph - 当前段落
+     * @param {Object} imgInfo - 图片信息
+     * @param {Array} paragraphs - 段落数组
+     */
+    function insertImagePlaceholder(currentParagraph, imgInfo, paragraphs) {
+        console.log(`🖼️ 插入图片占位符: ${imgInfo.id}`, imgInfo);
+
+        // 如果当前段落有内容，先保存它
+        if (currentParagraph.texts.length > 0) {
+            paragraphs.push(currentParagraph);
+        }
+
+        // 创建图片占位符段落
+        const imagePlaceholder = {
+            type: 'image-placeholder',
+            imageId: imgInfo.id,
+            imageInfo: imgInfo
+        };
+
+        console.log(`📝 创建图片占位符节点:`, JSON.stringify(imagePlaceholder, null, 2));
+        paragraphs.push(imagePlaceholder);
+
+        // 重置当前段落
+        currentParagraph.texts = [];
     }
 
     /**

@@ -160,6 +160,33 @@
 
             <!-- 剪藏模式设置 -->
             <div id="clipModeSettings" class="mode-settings" style="display: none;">
+                <!-- 图片处理设置 -->
+                <div class="setting-item">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="includeImagesToggle" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">包含图片</span>
+                    </label>
+                    <div class="setting-help">
+                        开启后将自动提取并上传网页中的图片到笔记
+                    </div>
+                </div>
+
+                <!-- 图片数量限制设置 -->
+                <div class="setting-item image-limit-setting">
+                    <div class="setting-label">
+                        <span class="setting-text">图片数量限制</span>
+                    </div>
+                    <div class="number-input-container">
+                        <button type="button" class="number-btn" id="imageCountDecrease">-</button>
+                        <input type="number" id="imageCountInput" class="number-input" value="10" min="0" max="100">
+                        <button type="button" class="number-btn" id="imageCountIncrease">+</button>
+                    </div>
+                    <div class="setting-help">
+                        限制提取的图片数量，有助于控制处理时间和避免配额浪费
+                    </div>
+                </div>
+
                 <div class="clip-mode-info">
                     <div class="info-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -170,7 +197,7 @@
                     </div>
                     <div class="info-content">
                         <div class="info-title">一键剪藏模式</div>
-                        <div class="info-text">直接保存网页内容并转换为墨问富文本格式，保持原有段落结构和基本格式。无需AI配置，仅需墨问API密钥即可使用，完全免费且速度快。</div>
+                        <div class="info-text">直接保存网页内容并转换为墨问富文本格式，保持原有段落结构和基本格式。支持图片自动上传和位置保持。无需AI配置，仅需墨问API密钥即可使用，完全免费且速度快。</div>
                     </div>
                 </div>
             </div>

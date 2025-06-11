@@ -1,6 +1,6 @@
 {
     "name": "mowen-note-assistant",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "墨问笔记助手 Chrome 扩展 - 智能整理网页内容并发布到墨问笔记",
     "private": true,
     "scripts": {

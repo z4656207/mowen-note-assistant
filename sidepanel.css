@@ -482,6 +482,102 @@ body {
 }
 
 
+/* 图片数量限制设置 */
+
+.image-limit-setting {
+    margin-top: 16px;
+}
+
+.setting-label {
+    margin-bottom: 8px;
+}
+
+.setting-text {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 14px;
+}
+
+.number-input-container {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    background: white;
+    overflow: hidden;
+    max-width: 120px;
+}
+
+.number-btn {
+    background: #f8f9fa;
+    border: none;
+    width: 32px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: #6c757d;
+    transition: all 0.2s ease;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.number-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.number-btn:active {
+    background: #dee2e6;
+    transform: scale(0.95);
+}
+
+.number-btn:disabled {
+    background: #f8f9fa;
+    color: #ced4da;
+    cursor: not-allowed;
+}
+
+.number-input {
+    border: none;
+    outline: none;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    background: white;
+    width: 56px;
+    height: 36px;
+    border-left: 1px solid #e1e5e9;
+    border-right: 1px solid #e1e5e9;
+}
+
+.number-input:focus {
+    background: #f8f9fa;
+}
+
+
+/* Chrome、Safari、Edge、Opera */
+
+.number-input::-webkit-outer-spin-button,
+.number-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+
+/* Firefox */
+
+.number-input[type=number] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+
 /* 操作按钮 */
 
 .actions {

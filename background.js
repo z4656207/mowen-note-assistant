@@ -262,17 +262,27 @@ class MowenNoteHelper {
             if (processingMode === 'clip') {
                 // 步骤3: 一键剪藏处理
                 console.log('\n📎 === 步骤 3/5: 一键剪藏处理 ===');
-                await this.updateTaskStatus(tabId, taskId, 'processing', '正在转换网页内容格式...', null, null, { step: 3, total: 5 });
+                performanceMetrics.steps.clipProcessingStart = Date.now();
+
+                // 更新状态：开始剪藏处理
+                await this.updateTaskStatus(tabId, taskId, 'processing', '正在进行一键剪藏处理...', null, null, { step: 3, total: 5 });
+
                 const clipStart = Date.now();
 
-                console.log('🔄 开始网页内容格式转换...');
-                console.log('📏 内容长度:', processedData.content ? processedData.content.length : 0, '字符');
+                // 检查是否有图片需要处理
+                const hasImages = processedData.structuredContent && processedData.structuredContent.images &&
+                    processedData.structuredContent.images.length > 0;
 
-                contentResult = await this.processClipContent(processedData, settings);
+                if (hasImages) {
+                    await this.updateTaskStatus(tabId, taskId, 'processing', `正在剪藏内容并处理 ${processedData.structuredContent.images.length} 个图片...`, null, null, { step: 3, total: 5, detail: '图片上传中' });
+                }
+
+                // 将tabId和taskId传递给settings以便图片上传时使用
+                const extendedSettings = {...settings, tabId, taskId };
+                contentResult = await this.processClipContent(processedData, extendedSettings);
                 performanceMetrics.steps.clipProcessing = Date.now() - clipStart;
                 console.log('✅ 一键剪藏处理完成');
                 console.log('⏱️ 剪藏处理耗时:', performanceMetrics.steps.clipProcessing + 'ms');
-                console.log('📄 生成段落数:', contentResult.paragraphs ? contentResult.paragraphs.length : 0);
             } else {
                 // 步骤3: AI处理
                 console.log('\n🤖 === 步骤 3/5: AI接口处理 ===');
@@ -479,6 +489,27 @@ class MowenNoteHelper {
 
                 // 直接使用结构化内容，已经包含格式信息
                 result.paragraphs = pageData.structuredContent.paragraphs;
+
+                // 处理图片（仅在剪藏模式下）
+                if (pageData.structuredContent.images && pageData.structuredContent.images.length > 0) {
+                    // 检查是否启用图片处理
+                    if (settings.includeImages !== false) { // 默认为true
+                        console.log(`🖼️ 开始处理 ${pageData.structuredContent.images.length} 个图片...`);
+                        const imageUploadStart = Date.now();
+
+                        try {
+                            await this.processImagesInContent(result, pageData.structuredContent.images, settings);
+                            console.log(`✅ 图片处理完成，耗时: ${Date.now() - imageUploadStart}ms`);
+                        } catch (error) {
+                            console.error('❌ 图片处理失败:', error);
+                            // 图片处理失败不影响文本内容，继续执行
+                        }
+                    } else {
+                        console.log('📝 图片处理已禁用，跳过图片上传');
+                        // 移除图片占位符，只保留文本内容
+                        result.paragraphs = this.removeImagePlaceholders(result.paragraphs);
+                    }
+                }
 
                 // 验证和统计
                 const processedTextLength = this.calculateProcessedTextLength(result.paragraphs);
@@ -753,13 +784,33 @@ class MowenNoteHelper {
             content.push({ type: "paragraph" });
         }
 
-        // 处理段落内容 - 简化处理，专注内容完整性
+        // 处理段落内容 - 包括文本段落和图片节点
         if (aiResult.paragraphs && Array.isArray(aiResult.paragraphs)) {
             console.log(`📄 处理 ${aiResult.paragraphs.length} 个段落...`);
 
             aiResult.paragraphs.forEach((paragraph, index) => {
+                //console.log(`📝 处理段落 ${index + 1}:`, JSON.stringify(paragraph, null, 2));
+
+                // 处理图片节点
+                if (paragraph.type === "image" && paragraph.attrs) {
+                    console.log(`🖼️ 发现图片节点: ${paragraph.attrs.uuid || '无ID'}`);
+                    content.push({
+                        type: "image",
+                        attrs: {
+                            uuid: paragraph.attrs.uuid,
+                            alt: paragraph.attrs.alt || "",
+                            align: paragraph.attrs.align || "center"
+                        }
+                    });
+
+                    // 图片后添加空行
+                    content.push({ type: "paragraph" });
+                    return;
+                }
+
+                // 处理文本段落
                 if (!paragraph || !paragraph.texts || !Array.isArray(paragraph.texts)) {
-                    console.warn(`⚠️ 段落 ${index + 1} 格式无效，跳过`);
+                    console.warn(`⚠️ 段落 ${index + 1} 格式无效，跳过:`, paragraph);
                     return;
                 }
 
@@ -1876,8 +1927,8 @@ class MowenNoteHelper {
                 // JSON质量检查
                 const qualityScore = this.assessJSONQuality(parsedResult, content);
                 console.log(`🔍 JSON质量评估: ${qualityScore.emoji} ${qualityScore.grade} (${qualityScore.score}分)`);
-                if (qualityScore.issues.length > 0) {
-                    console.warn('❌ 发现问题:', qualityScore.issues.join('; '));
+                if (qualityScore.reasons.length > 0) {
+                    console.warn('❌ 发现问题:', qualityScore.reasons.join('; '));
                 }
                 if (qualityScore.warnings.length > 0) {
                     console.warn('⚠️ 警告信息:', qualityScore.warnings.join('; '));
@@ -1991,6 +2042,8 @@ ${pageData.content}
    - 重要概念或关键词用加粗格式
    - 特别重要的信息用高亮格式
    - 保留原文中的链接
+   - 对于明确的引用语句（如带引号的他人观点、文献引用等），可使用引用格式，但应谨慎使用
+   - 识别墨问内链笔记URL (例如 https://mowen.cn/note/xxxxxxxx)，并将其转换为 "note" 类型的节点
 ${tagsInstruction}
 5. 保持内容的逻辑性和可读性${customPromptSection}
 
@@ -2001,6 +2054,7 @@ ${tagsInstruction}
   "title": "整理后的标题",
   "paragraphs": [
     {
+      "type": "paragraph",
       "texts": [
         {"text": "普通文本"},
         {"text": "加粗文本", "bold": true},
@@ -2009,9 +2063,14 @@ ${tagsInstruction}
       ]
     },
     {
-      "texts": [
-        {"text": "第二段内容"}
-      ]
+       "type": "quote",
+       "texts": [
+        {"text": "这是一段引用内容"}
+       ]
+    },
+    {
+       "type": "note",
+       "uuid": "被引用的笔记ID"
     }
   ],
   ${tagsJsonField}
@@ -2019,19 +2078,36 @@ ${tagsInstruction}
 }
 
 **格式约束：**
+- `
+        paragraphs `数组中每个对象代表一个段落、引用或内链笔记
+- 段落类型由`
+        type `字段定义：`
+        paragraph `(默认)、`
+        quote `(引用)、`
+        note `(内链笔记)
+- `
+        note `类型的节点，`
+        uuid `字段为墨问笔记的ID
 - 所有字符串必须用双引号包围
 - JSON对象和数组的最后一个元素后不要添加逗号
 - text字段不能为空字符串
 - link字段必须是有效的URL
 - 确保JSON语法完全正确，能被JSON.parse()成功解析
 - 不要在JSON外添加任何文字说明或markdown标记
+- 段落之间会自动添加空行，段落之间中西文之间加空格
 
-注意：
-- 每个段落包含texts数组，每个text对象代表一段文本及其格式
-- 段落之间会自动添加空行
-- 段落之间中西文之间加空格
-- 输出标准JSON格式，确保可以正确解析
-- 使用中文输出
+重要提醒：
+- 严格按照JSON结构要求输出，确保每个段落都有正确的texts数组
+- 每个text对象必须包含text字段，格式属性(bold/highlight/link)可选
+- 直接输出JSON，不要添加markdown标记或其他说明文字
+- 使用中文输出内容
+
+**JSON结构检查清单：**
+✓ 每个段落有texts数组 
+✓ 每个text对象有text字段
+✓ 所有字符串用双引号
+✓ 无多余逗号
+✓ 语法正确可解析
 ${tagsNote}`;
     }
 
@@ -2084,6 +2160,8 @@ ${pageData.content}
    - 标题和重要概念用加粗格式
    - 关键信息和要点用高亮格式
    - 保留并优化原文中的链接
+   - 对于明确的引用语句（如带引号的他人观点、文献引用等），可使用引用格式，但应谨慎使用
+   - 识别墨问内链笔记URL (例如 https://mowen.cn/note/xxxxxxxx)，并将其转换为 "note" 类型的节点
 4. 修正明显的格式问题和错误
 ${tagsInstruction}
 6. 保持原文的完整性和准确性${customPromptSection}
@@ -2095,6 +2173,7 @@ ${tagsInstruction}
   "title": "整理后的标题",
   "paragraphs": [
     {
+      "type": "paragraph",
       "texts": [
         {"text": "普通文本"},
         {"text": "加粗文本", "bold": true},
@@ -2103,9 +2182,14 @@ ${tagsInstruction}
       ]
     },
     {
-      "texts": [
-        {"text": "第二段内容"}
-      ]
+       "type": "quote",
+       "texts": [
+        {"text": "这是一段引用内容"}
+       ]
+    },
+    {
+       "type": "note",
+       "uuid": "被引用的笔记ID"
     }
   ],
   ${tagsJsonField}
@@ -2113,20 +2197,37 @@ ${tagsInstruction}
 }
 
 **格式约束：**
+- `
+        paragraphs `数组中每个对象代表一个段落、引用或内链笔记
+- 段落类型由`
+        type `字段定义：`
+        paragraph `(默认)、`
+        quote `(引用)、`
+        note `(内链笔记)
+- `
+        note `类型的节点，`
+        uuid `字段为墨问笔记的ID
 - 所有字符串必须用双引号包围
 - JSON对象和数组的最后一个元素后不要添加逗号
 - text字段不能为空字符串
 - link字段必须是有效的URL
 - 确保JSON语法完全正确，能被JSON.parse()成功解析
 - 不要在JSON外添加任何文字说明或markdown标记
+- 段落之间会自动添加空行，段落之间中西文之间加空格
 
-注意：
-- 每个段落包含texts数组，每个text对象代表一段文本及其格式
-- 段落之间会自动添加空行
-- 段落之间中西文之间加空格
+重要提醒：
+- 严格按照JSON结构要求输出，确保每个段落都有正确的texts数组  
+- 每个text对象必须包含text字段，格式属性(bold/highlight/link)可选
 - 重点是格式整理而不是内容总结
-- 输出标准JSON格式，确保可以正确解析
-- 使用中文输出
+- 直接输出JSON，不要添加markdown标记或其他说明文字
+- 使用中文输出内容
+
+**JSON结构检查清单：**
+✓ 每个段落有texts数组 
+✓ 每个text对象有text字段
+✓ 所有字符串用双引号
+✓ 无多余逗号
+✓ 语法正确可解析
 ${tagsNote}`;
     }
 
@@ -2216,10 +2317,40 @@ ${tagsNote}`;
             }
         };
 
-        console.log('📦 请求体大小:', JSON.stringify(requestBody).length, '字符');
+        console.log('\n🔍 === 完整的墨问API请求参数 ===');
+        console.log('📦 请求体完整内容:');
+        console.log('--- 请求体开始 ---');
+        console.log(JSON.stringify(requestBody, null, 2));
+        console.log('--- 请求体结束 ---');
+        console.log('📏 请求体大小:', JSON.stringify(requestBody).length, '字符');
         console.log('🏷️ 自动发布:', autoPublish);
         console.log('🔖 标签数量:', tags.length);
         console.log('📄 段落数量:', noteAtom.content ? noteAtom.content.length : 0);
+
+        // 分析请求体中的内容类型
+        let textParagraphCount = 0;
+        let imageParagraphCount = 0;
+        let emptyParagraphCount = 0;
+
+        if (noteAtom.content) {
+            noteAtom.content.forEach(item => {
+                if (item.type === 'paragraph') {
+                    if (item.content && item.content.length > 0) {
+                        textParagraphCount++;
+                    } else {
+                        emptyParagraphCount++;
+                    }
+                } else if (item.type === 'image') {
+                    imageParagraphCount++;
+                }
+            });
+        }
+
+        console.log('📊 内容分析:');
+        console.log(`  📝 文本段落: ${textParagraphCount} 个`);
+        console.log(`  🖼️ 图片节点: ${imageParagraphCount} 个`);
+        console.log(`  📄 空段落: ${emptyParagraphCount} 个`);
+        console.log('='.repeat(50));
 
         const networkStart = Date.now();
         console.log('📡 发送墨问API请求...');
@@ -2586,105 +2717,348 @@ ${tagsNote}`;
      * @returns {Object} 质量评估结果
      */
     assessJSONQuality(parsedResult, originalContent) {
-        const assessment = {
-            score: 100,
-            issues: [],
-            warnings: [],
-            details: {}
-        };
+        let score = 0;
+        const reasons = [];
 
-        // 1. 检查必需字段
-        if (!parsedResult.title) {
-            assessment.score -= 20;
-            assessment.issues.push('缺少title字段');
-        } else if (parsedResult.title.length < 3) {
-            assessment.score -= 10;
-            assessment.warnings.push('title过短');
+        // 基础结构检查
+        if (parsedResult && typeof parsedResult === 'object') {
+            score += 20;
+        } else {
+            reasons.push('缺少基础对象结构');
+            return { score, reasons };
         }
 
-        if (!parsedResult.paragraphs || !Array.isArray(parsedResult.paragraphs)) {
-            assessment.score -= 30;
-            assessment.issues.push('缺少或格式错误的paragraphs字段');
+        // 检查必需字段
+        if (parsedResult.title && typeof parsedResult.title === 'string') {
+            score += 20;
         } else {
-            // 检查段落结构
-            let validParagraphs = 0;
-            let totalTexts = 0;
+            reasons.push('缺少有效标题');
+        }
 
-            parsedResult.paragraphs.forEach((paragraph, index) => {
-                if (!paragraph.texts || !Array.isArray(paragraph.texts)) {
-                    assessment.score -= 5;
-                    assessment.issues.push(`段落${index + 1}缺少texts数组`);
-                } else {
-                    validParagraphs++;
-                    paragraph.texts.forEach((text, textIndex) => {
-                        if (!text.text || typeof text.text !== 'string') {
-                            assessment.score -= 3;
-                            assessment.issues.push(`段落${index + 1}文本${textIndex + 1}无效`);
-                        } else {
-                            totalTexts++;
-                            if (text.text.trim().length === 0) {
-                                assessment.score -= 2;
-                                assessment.warnings.push(`段落${index + 1}包含空文本`);
+        if (parsedResult.paragraphs && Array.isArray(parsedResult.paragraphs)) {
+            score += 20;
+            if (parsedResult.paragraphs.length > 0) {
+                score += 10;
+            }
+        } else {
+            reasons.push('缺少段落数组');
+        }
+
+        // 内容质量检查
+        const totalTextLength = this.calculateProcessedTextLength(parsedResult.paragraphs || []);
+        const originalLength = originalContent.length;
+
+        if (totalTextLength > originalLength * 0.1) {
+            score += 15;
+        } else {
+            reasons.push('提取内容过少');
+        }
+
+        if (totalTextLength < originalLength * 3) {
+            score += 10;
+        } else {
+            reasons.push('提取内容异常过多');
+        }
+
+        // 标签质量检查
+        if (parsedResult.tags && Array.isArray(parsedResult.tags)) {
+            score += 5;
+        }
+
+        return { score, reasons };
+    }
+
+    /**
+     * 处理内容中的图片 - 上传到墨问并替换占位符
+     * @param {Object} contentResult - 内容结果对象 
+     * @param {Array} images - 图片信息数组
+     * @param {Object} settings - 设置对象，包含API密钥
+     */
+    async processImagesInContent(contentResult, images, settings) {
+            if (!images || images.length === 0) {
+                console.log('📝 没有图片需要处理');
+                return;
+            }
+
+            if (!settings.apiKey) {
+                console.error('❌ 缺少墨问API密钥，无法上传图片');
+                return;
+            }
+
+            // 应用图片数量限制
+            const imageCountLimit = settings.imageCountLimit || 10;
+            const limitedImages = images.slice(0, imageCountLimit);
+            const excludedImages = images.slice(imageCountLimit); // 被限制排除的图片
+
+            if (images.length > imageCountLimit) {
+                console.log(`📊 图片数量限制: 发现 ${images.length} 个图片，限制为 ${imageCountLimit} 个`);
+            }
+
+            console.log(`🖼️ 开始处理 ${limitedImages.length} 个图片...`);
+            const uploadResults = {}; // 存储上传结果，key为图片ID
+            const excludedImageIds = new Set(excludedImages.map(img => img.id)); // 被排除的图片ID集合
+
+            // 逐个上传图片，遵守API频率限制（每秒1次）
+            for (let i = 0; i < limitedImages.length; i++) {
+                const imageInfo = limitedImages[i];
+                try {
+                    console.log(`📤 上传图片 ${i + 1}/${limitedImages.length}: ${imageInfo.src.substring(0, 80)}...`);
+
+                    // 更新任务状态显示上传进度
+                    if (settings.tabId && settings.taskId) {
+                        await this.updateTaskStatus(
+                            settings.tabId,
+                            settings.taskId,
+                            'processing',
+                            `正在上传图片 ${i + 1}/${limitedImages.length}...`,
+                            null,
+                            null, {
+                                currentStep: `上传图片 ${i + 1}/${limitedImages.length}`,
+                                totalSteps: limitedImages.length + 1, // +1 for final processing
+                                currentStepProgress: Math.round((i / limitedImages.length) * 100)
                             }
-                        }
+                        );
+                    }
 
-                        // 检查链接格式
-                        if (text.link && !text.link.match(/^https?:\/\//)) {
-                            assessment.score -= 2;
-                            assessment.warnings.push(`段落${index + 1}包含无效链接`);
-                        }
-                    });
+                    const uploadResult = await this.uploadImageToMowen(imageInfo, settings.apiKey);
+
+                    console.log(`📤 图片上传结果:`, JSON.stringify(uploadResult, null, 2));
+
+                    if (uploadResult && uploadResult.file) {
+                        uploadResults[imageInfo.id] = {
+                            fileId: uploadResult.file.fileId,
+                            alt: imageInfo.alt,
+                            align: this.determineImageAlignment(imageInfo)
+                        };
+                        console.log(`✅ 图片上传成功: ${imageInfo.id} -> ${uploadResult.file.fileId}`);
+                    } else {
+                        console.error(`❌ 图片上传失败: ${imageInfo.id}`, uploadResult);
+                    }
+                } catch (error) {
+                    console.error(`❌ 图片上传异常: ${imageInfo.id}`, error);
+                    // 图片上传失败时继续处理其他图片，不中断整个流程
+                }
+
+                // 如果不是最后一个图片，等待1.2秒以遵守API频率限制
+                if (i < limitedImages.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                }
+            }
+
+            // 替换段落中的图片占位符
+            console.log(`🔄 开始替换图片占位符...`);
+            console.log(`📋 上传成功的图片:`, uploadResults);
+            console.log(`📋 被数量限制排除的图片:`, Array.from(excludedImageIds));
+            console.log(`📄 替换前段落数:`, contentResult.paragraphs.length);
+
+            contentResult.paragraphs = this.replaceImagePlaceholders(contentResult.paragraphs, uploadResults, excludedImageIds);
+
+            console.log(`📄 替换后段落数:`, contentResult.paragraphs.length);
+            console.log(`📋 替换后的段落结构:`);
+            contentResult.paragraphs.forEach((p, i) => {
+                if (p.type === 'image') {
+                    console.log(`  段落 ${i}: 图片节点 (uuid: ${p.attrs?.uuid})`);
+                } else {
+                    //console.log(`  段落 ${i}: 文本段落 (${p.texts?.length || 0} 个文本节点)`);
                 }
             });
 
-            assessment.details.validParagraphs = validParagraphs;
-            assessment.details.totalTexts = totalTexts;
-        }
+            const successCount = Object.keys(uploadResults).length;
+            console.log(`🖼️ 图片处理结果: ${successCount}/${limitedImages.length} 上传成功${images.length > limitedImages.length ? ` (原始图片数量: ${images.length})` : ''}`);
+    }
 
-        // 2. 检查标签
-        if (parsedResult.tags && Array.isArray(parsedResult.tags)) {
-            if (parsedResult.tags.length > 5) {
-                assessment.score -= 5;
-                assessment.warnings.push('标签数量过多');
+    /**
+     * 上传单个图片到墨问（带重试机制）
+     * @param {Object} imageInfo - 图片信息
+     * @param {string} apiKey - API密钥
+     * @param {number} retryCount - 重试次数
+     * @returns {Promise<Object>} 上传结果
+     */
+    async uploadImageToMowen(imageInfo, apiKey, retryCount = 0) {
+        const MAX_RETRIES = 3;
+        const RETRY_DELAYS = [2000, 4000, 8000]; // 递增延迟：2秒, 4秒, 8秒
+
+        try {
+            // 生成文件名
+            const fileName = this.generateImageFileName(imageInfo);
+
+            const requestBody = {
+                fileType: 1, // 图片类型
+                url: imageInfo.src,
+                fileName: fileName
+            };
+
+            const response = await fetch('https://open.mowen.cn/api/open/api/v1/upload/url', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+
+                // 处理429频率限制错误
+                if (response.status === 429) {
+                    if (retryCount < MAX_RETRIES) {
+                        const delay = RETRY_DELAYS[retryCount];
+                        console.warn(`⏳ 遇到频率限制，${delay/1000}秒后重试... (${retryCount + 1}/${MAX_RETRIES})`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return await this.uploadImageToMowen(imageInfo, apiKey, retryCount + 1);
+                    } else {
+                        throw new Error(`频率限制超过最大重试次数: ${errorText}`);
+                    }
+                }
+
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
-            assessment.details.tagsCount = parsedResult.tags.length;
+
+            const result = await response.json();
+
+            // 检查API响应格式
+            if (result.code && result.code !== 200) {
+                throw new Error(`API错误: ${result.reason || result.message || '未知错误'}`);
+            }
+
+            return result;
+
+        } catch (error) {
+            // 如果是429错误且还有重试机会，不要记录为最终错误
+            if (error.message.includes('HTTP 429') && retryCount < MAX_RETRIES) {
+                throw error; // 重新抛出以触发重试
+            }
+
+            console.error(`图片上传失败 [${imageInfo.src}]:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * 生成图片文件名
+     * @param {Object} imageInfo - 图片信息
+     * @returns {string} 文件名
+     */
+    generateImageFileName(imageInfo) {
+        try {
+            const url = new URL(imageInfo.src);
+            const pathname = url.pathname;
+            const originalName = pathname.split('/').pop();
+
+            // 如果原文件名有效，使用原文件名
+            if (originalName && originalName.includes('.')) {
+                const cleanName = originalName.replace(/[^a-zA-Z0-9\.\-_]/g, '');
+                if (cleanName.length > 0) {
+                    return cleanName;
+                }
+            }
+        } catch (error) {
+            // URL解析失败，使用默认名称
         }
 
-        // 3. 检查原始内容质量
-        const needsCleanup = originalContent.includes('```') ||
-            originalContent.includes('解释') ||
-            originalContent.includes('说明');
-        if (needsCleanup) {
-            assessment.score -= 5;
-            assessment.warnings.push('AI返回包含额外说明文字');
-        }
+        // 根据图片信息生成默认文件名
+        const timestamp = Date.now();
+        const defaultExtension = 'jpg';
+        return `image_${imageInfo.position}_${timestamp}.${defaultExtension}`;
+    }
 
-        // 4. 计算内容丰富度
-        const contentLength = JSON.stringify(parsedResult).length;
-        if (contentLength < 200) {
-            assessment.score -= 10;
-            assessment.warnings.push('内容过于简单');
-        }
-        assessment.details.contentLength = contentLength;
+    /**
+     * 确定图片对齐方式
+     * @param {Object} imageInfo - 图片信息
+     * @returns {string} 对齐方式 (left, center, right)
+     */
+    determineImageAlignment(imageInfo) {
+        // 根据父元素的文本对齐方式确定图片对齐
+        const textAlign = imageInfo.parentElement && imageInfo.parentElement.textAlign ?
+            imageInfo.parentElement.textAlign : '';
 
-        // 5. 质量等级
-        if (assessment.score >= 90) {
-            assessment.grade = '优秀';
-            assessment.emoji = '🎯';
-        } else if (assessment.score >= 75) {
-            assessment.grade = '良好';
-            assessment.emoji = '👍';
-        } else if (assessment.score >= 60) {
-            assessment.grade = '一般';
-            assessment.emoji = '⚠️';
-        } else {
-            assessment.grade = '较差';
-            assessment.emoji = '🚨';
-        }
+        if (textAlign === 'center') return 'center';
+        if (textAlign === 'right') return 'right';
 
-        return assessment;
+        // 根据图片尺寸判断：大图片通常居中显示
+        if (imageInfo.width > 600) return 'center';
+
+        // 默认居中
+        return 'center';
+    }
+
+    /**
+     * 替换段落中的图片占位符
+     * @param {Array} paragraphs - 段落数组
+     * @param {Object} uploadResults - 上传结果映射
+     * @param {Set} excludedImageIds - 被数量限制排除的图片ID集合
+     * @returns {Array} 处理后的段落数组
+     */
+    replaceImagePlaceholders(paragraphs, uploadResults, excludedImageIds = new Set()) {
+        console.log(`🔄 replaceImagePlaceholders 开始执行...`);
+        console.log(`📋 输入段落数: ${paragraphs.length}`);
+        console.log(`📋 上传结果keys:`, Object.keys(uploadResults));
+        console.log(`📋 排除的图片IDs:`, Array.from(excludedImageIds));
+
+        const result = paragraphs.map((paragraph, index) => {
+            //console.log(`📝 处理段落 ${index}:`, JSON.stringify(paragraph, null, 2));
+
+            // 检查是否是图片占位符
+            if (paragraph.type === 'image-placeholder' && paragraph.imageId) {
+                console.log(`🖼️ 发现图片占位符: ${paragraph.imageId}`);
+                
+                // 检查是否被数量限制排除
+                if (excludedImageIds.has(paragraph.imageId)) {
+                    console.log(`🚫 图片被数量限制排除，静默移除: ${paragraph.imageId}`);
+                    return null; // 返回null，稍后会被过滤掉
+                }
+                
+                const uploadResult = uploadResults[paragraph.imageId];
+                console.log(`📤 对应的上传结果:`, uploadResult);
+
+                if(uploadResult.alt == "图片")
+                    uploadResult.alt = "";
+
+                if (uploadResult) {
+                    // 替换为墨问图片节点
+                    const imageNode = {
+                        type: "image",
+                        attrs: {
+                            uuid: uploadResult.fileId,
+                            alt: uploadResult.alt || "",
+                            align: uploadResult.align || "center"
+                        }
+                    };
+                    console.log(`✅ 创建图片节点:`, JSON.stringify(imageNode, null, 2));
+                    return imageNode;
+                } else {
+                    // 真正的上传失败，用文本说明替代
+                    console.log(`❌ 图片上传失败，创建失败提示文本`);
+                    return {
+                        texts: [{
+                            text: `[图片上传失败: ${paragraph.imageInfo?.alt || ''}]`
+                        }]
+                    };
+                }
+            } else {
+                console.log(`📄 保持原段落 (类型: ${paragraph.type || '文本'})`);
+            }
+
+            return paragraph;
+        }).filter(paragraph => paragraph !== null);
+
+        console.log(`✅ replaceImagePlaceholders 执行完成，输出段落数: ${result.length}`);
+        return result;
+    }
+
+    /**
+     * 移除段落中的图片占位符
+     * @param {Array} paragraphs - 段落数组
+     * @returns {Array} 处理后的段落数组
+     */
+    removeImagePlaceholders(paragraphs) {
+        return paragraphs.filter(paragraph => {
+            // 过滤掉图片占位符，只保留文本段落
+            return paragraph.type !== 'image-placeholder';
+        });
     }
 }
 
-// 初始化后台脚本
+// 创建实例
 new MowenNoteHelper();

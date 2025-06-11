@@ -13,20 +13,42 @@ class SidePanelController {
      */
     async init() {
         try {
-            // 版本迁移：清理老版本的autoPublish设置，确保新版本默认为私有发布
+            console.log('🔧 初始化侧边栏控制器...');
+
+            // 确保DOM已加载
+            await this.waitForDOM();
+
+            // 迁移旧设置
             await this.migrateSettings();
 
-            await this.waitForDOM();
-            this.bindEvents();
+            // 初始化处理模式
             await this.initProcessingMode();
-            await this.loadPageInfo();
+
+            // 加载发布设置
             await this.loadPublishSettings();
+
+            // 加载图片设置
+            await this.loadImageSettings();
+
+            // 加载自定义提示词
             await this.initCustomPrompt();
-            this.addForceResetFeature();
+
+            // 绑定事件
+            this.bindEvents();
+
+            // 检查配置
+            await this.checkConfiguration();
+
+            // 加载页面信息
+            await this.loadPageInfo();
+
+            // 初始化侧边栏功能
             this.initSidePanelFeatures();
-            await this.checkRunningTask();
+
+            console.log('✅ 侧边栏控制器初始化完成');
+
         } catch (error) {
-            console.error('初始化失败:', error);
+            console.error('❌ 侧边栏控制器初始化失败:', error);
         }
     }
 
@@ -113,23 +135,30 @@ class SidePanelController {
      */
     updateModeSettings(mode) {
         const aiModeSettings = document.getElementById('aiModeSettings');
+        const clipModeSettings = document.getElementById('clipModeSettings');
         const customPromptSettings = document.querySelector('.custom-prompt-settings');
 
         if (mode === 'clip') {
-            // 一键剪藏模式：隐藏AI相关设置
+            // 一键剪藏模式：隐藏AI相关设置，显示剪藏设置
             if (aiModeSettings) {
                 aiModeSettings.style.display = 'none';
             }
             if (customPromptSettings) {
                 customPromptSettings.style.display = 'none';
             }
+            if (clipModeSettings) {
+                clipModeSettings.style.display = 'block';
+            }
         } else {
-            // AI模式：显示所有设置
+            // AI模式：显示AI设置，隐藏剪藏设置
             if (aiModeSettings) {
                 aiModeSettings.style.display = 'block';
             }
             if (customPromptSettings) {
                 customPromptSettings.style.display = 'block';
+            }
+            if (clipModeSettings) {
+                clipModeSettings.style.display = 'none';
             }
         }
     }
@@ -600,6 +629,73 @@ class SidePanelController {
             });
         }
 
+        // 包含图片开关 (剪藏模式专用)
+        const includeImagesToggle = document.getElementById('includeImagesToggle');
+        if (includeImagesToggle) {
+            includeImagesToggle.addEventListener('change', async(e) => {
+                await this.saveImageSettings(includeImagesToggle.checked);
+            });
+        }
+
+        // 图片数量限制事件监听器
+        const imageCountInput = document.getElementById('imageCountInput');
+        const imageCountDecrease = document.getElementById('imageCountDecrease');
+        const imageCountIncrease = document.getElementById('imageCountIncrease');
+
+        if (imageCountInput) {
+            // 数值输入框变化事件
+            imageCountInput.addEventListener('input', async(e) => {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 0) value = 0;
+                if (value > 100) value = 100;
+                e.target.value = value;
+                await this.saveImageCountLimit(value);
+                this.updateImageCountButtons(value);
+            });
+
+            // 数值输入框失去焦点时确保值有效
+            imageCountInput.addEventListener('blur', async(e) => {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 0) value = 0;
+                if (value > 100) value = 100;
+                e.target.value = value;
+                await this.saveImageCountLimit(value);
+                this.updateImageCountButtons(value);
+            });
+        }
+
+        // 减少按钮
+        if (imageCountDecrease) {
+            imageCountDecrease.addEventListener('click', async() => {
+                const input = document.getElementById('imageCountInput');
+                if (input) {
+                    let value = parseInt(input.value) || 0;
+                    if (value > 0) {
+                        value--;
+                        input.value = value;
+                        await this.saveImageCountLimit(value);
+                        this.updateImageCountButtons(value);
+                    }
+                }
+            });
+        }
+
+        // 增加按钮
+        if (imageCountIncrease) {
+            imageCountIncrease.addEventListener('click', async() => {
+                const input = document.getElementById('imageCountInput');
+                if (input) {
+                    let value = parseInt(input.value) || 0;
+                    if (value < 100) {
+                        value++;
+                        input.value = value;
+                        await this.saveImageCountLimit(value);
+                        this.updateImageCountButtons(value);
+                    }
+                }
+            });
+        }
+
         // 自定义提示词输入框
         const customPromptInput = document.getElementById('customPromptInput');
         if (customPromptInput) {
@@ -968,6 +1064,82 @@ class SidePanelController {
                 resolve();
             });
         });
+    }
+
+    /**
+     * 保存图片设置
+     */
+    async saveImageSettings(includeImages) {
+        return new Promise((resolve) => {
+            chrome.storage.local.set({ includeImages }, () => {
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * 获取图片设置
+     */
+    async getImageSettings() {
+        return new Promise((resolve) => {
+            chrome.storage.local.get(['includeImages', 'imageCountLimit'], (result) => {
+                // 默认包含图片，限制10张
+                resolve({
+                    includeImages: result.includeImages !== false,
+                    imageCountLimit: result.imageCountLimit || 10
+                });
+            });
+        });
+    }
+
+    /**
+     * 加载图片设置
+     */
+    async loadImageSettings() {
+        try {
+            const { includeImages, imageCountLimit } = await this.getImageSettings();
+            const includeImagesToggle = document.getElementById('includeImagesToggle');
+            if (includeImagesToggle) {
+                includeImagesToggle.checked = includeImages === true;
+            }
+
+            // 加载图片数量限制
+            const imageCountInput = document.getElementById('imageCountInput');
+            if (imageCountInput) {
+                const countLimit = imageCountLimit || 10; // 默认10张
+                imageCountInput.value = countLimit;
+                this.updateImageCountButtons(countLimit);
+            }
+        } catch (error) {
+            console.error('加载图片设置失败:', error);
+        }
+    }
+
+    /**
+     * 保存图片数量限制
+     */
+    async saveImageCountLimit(imageCountLimit) {
+        return new Promise((resolve) => {
+            chrome.storage.local.set({ imageCountLimit }, () => {
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * 更新图片数量按钮状态
+     */
+    updateImageCountButtons(value) {
+        const decreaseBtn = document.getElementById('imageCountDecrease');
+        const increaseBtn = document.getElementById('imageCountIncrease');
+
+        if (decreaseBtn) {
+            decreaseBtn.disabled = value <= 0;
+        }
+
+        if (increaseBtn) {
+            increaseBtn.disabled = value >= 100;
+        }
     }
 
     /**
@@ -1693,6 +1865,9 @@ class SidePanelController {
             // 获取发布设置
             const publishSettings = await this.getPublishSettings();
             
+            // 获取图片设置（仅在剪藏模式下使用）
+            const imageSettings = currentMode === 'clip' ? await this.getImageSettings() : {};
+            
             // 获取自定义提示词
             const customPromptInput = document.getElementById('customPromptInput');
             const customPrompt = customPromptInput ? customPromptInput.value.trim() : '';
@@ -1700,8 +1875,10 @@ class SidePanelController {
             // 准备设置对象，包含处理模式
             const settings = {
                 ...publishSettings,
+                ...imageSettings,
                 customPrompt: customPrompt,
-                processingMode: currentMode  // 添加处理模式
+                processingMode: currentMode,  // 添加处理模式
+                apiKey: config.mowenApiKey   // 添加API密钥以支持图片上传
             };
 
             console.log('开始处理任务:', {
