@@ -1926,14 +1926,14 @@ class MowenNoteHelper {
 
                 // JSON质量检查
                 const qualityScore = this.assessJSONQuality(parsedResult, content);
-                console.log(`🔍 JSON质量评估: ${qualityScore.emoji} ${qualityScore.grade} (${qualityScore.score}分)`);
-                if (qualityScore.reasons.length > 0) {
+                console.log(`🔍 JSON质量评估: ${qualityScore.emoji || '❓'} ${qualityScore.grade || '未知'} (${qualityScore.score || 0}分)`);
+                if (qualityScore.reasons && qualityScore.reasons.length > 0) {
                     console.warn('❌ 发现问题:', qualityScore.reasons.join('; '));
                 }
-                if (qualityScore.warnings.length > 0) {
+                if (qualityScore.warnings && qualityScore.warnings.length > 0) {
                     console.warn('⚠️ 警告信息:', qualityScore.warnings.join('; '));
                 }
-                console.log('📊 质量详情:', qualityScore.details);
+                console.log('📊 质量详情:', qualityScore.details || {});
 
                 const totalTime = Date.now() - requestStart;
                 console.log('⏱️ AI API总耗时:', totalTime + 'ms');
@@ -2043,7 +2043,6 @@ ${pageData.content}
    - 特别重要的信息用高亮格式
    - 保留原文中的链接
    - 对于明确的引用语句（如带引号的他人观点、文献引用等），可使用引用格式，但应谨慎使用
-   - 识别墨问内链笔记URL (例如 https://mowen.cn/note/xxxxxxxx)，并将其转换为 "note" 类型的节点
 ${tagsInstruction}
 5. 保持内容的逻辑性和可读性${customPromptSection}
 
@@ -2067,10 +2066,6 @@ ${tagsInstruction}
        "texts": [
         {"text": "这是一段引用内容"}
        ]
-    },
-    {
-       "type": "note",
-       "uuid": "被引用的笔记ID"
     }
   ],
   ${tagsJsonField}
@@ -2079,15 +2074,11 @@ ${tagsInstruction}
 
 **格式约束：**
 - `
-        paragraphs `数组中每个对象代表一个段落、引用或内链笔记
+        paragraphs `数组中每个对象代表一个段落或引用
 - 段落类型由`
         type `字段定义：`
         paragraph `(默认)、`
-        quote `(引用)、`
-        note `(内链笔记)
-- `
-        note `类型的节点，`
-        uuid `字段为墨问笔记的ID
+        quote `(引用)
 - 所有字符串必须用双引号包围
 - JSON对象和数组的最后一个元素后不要添加逗号
 - text字段不能为空字符串
@@ -2161,7 +2152,6 @@ ${pageData.content}
    - 关键信息和要点用高亮格式
    - 保留并优化原文中的链接
    - 对于明确的引用语句（如带引号的他人观点、文献引用等），可使用引用格式，但应谨慎使用
-   - 识别墨问内链笔记URL (例如 https://mowen.cn/note/xxxxxxxx)，并将其转换为 "note" 类型的节点
 4. 修正明显的格式问题和错误
 ${tagsInstruction}
 6. 保持原文的完整性和准确性${customPromptSection}
@@ -2186,10 +2176,6 @@ ${tagsInstruction}
        "texts": [
         {"text": "这是一段引用内容"}
        ]
-    },
-    {
-       "type": "note",
-       "uuid": "被引用的笔记ID"
     }
   ],
   ${tagsJsonField}
@@ -2198,15 +2184,11 @@ ${tagsInstruction}
 
 **格式约束：**
 - `
-        paragraphs `数组中每个对象代表一个段落、引用或内链笔记
+        paragraphs `数组中每个对象代表一个段落或引用
 - 段落类型由`
         type `字段定义：`
         paragraph `(默认)、`
-        quote `(引用)、`
-        note `(内链笔记)
-- `
-        note `类型的节点，`
-        uuid `字段为墨问笔记的ID
+        quote `(引用)
 - 所有字符串必须用双引号包围
 - JSON对象和数组的最后一个元素后不要添加逗号
 - text字段不能为空字符串
@@ -2719,13 +2701,14 @@ ${tagsNote}`;
     assessJSONQuality(parsedResult, originalContent) {
         let score = 0;
         const reasons = [];
+        const warnings = [];
 
         // 基础结构检查
         if (parsedResult && typeof parsedResult === 'object') {
             score += 20;
         } else {
             reasons.push('缺少基础对象结构');
-            return { score, reasons };
+            return { score, reasons, warnings, emoji: '❌', grade: '失败', details: {} };
         }
 
         // 检查必需字段
@@ -2746,18 +2729,20 @@ ${tagsNote}`;
 
         // 内容质量检查
         const totalTextLength = this.calculateProcessedTextLength(parsedResult.paragraphs || []);
-        const originalLength = originalContent.length;
+        const originalLength = originalContent ? originalContent.length : 0;
 
-        if (totalTextLength > originalLength * 0.1) {
-            score += 15;
-        } else {
-            reasons.push('提取内容过少');
-        }
+        if (originalLength > 0) {
+            if (totalTextLength > originalLength * 0.1) {
+                score += 15;
+            } else {
+                reasons.push('提取内容过少');
+            }
 
-        if (totalTextLength < originalLength * 3) {
-            score += 10;
-        } else {
-            reasons.push('提取内容异常过多');
+            if (totalTextLength < originalLength * 3) {
+                score += 10;
+            } else {
+                reasons.push('提取内容异常过多');
+            }
         }
 
         // 标签质量检查
@@ -2765,7 +2750,39 @@ ${tagsNote}`;
             score += 5;
         }
 
-        return { score, reasons };
+        // 结构完整性检查
+        if (parsedResult.paragraphs && Array.isArray(parsedResult.paragraphs)) {
+            const emptyParagraphs = parsedResult.paragraphs.filter(p => !p.texts || p.texts.length === 0);
+            if (emptyParagraphs.length > 0) {
+                warnings.push(`发现 ${emptyParagraphs.length} 个空段落`);
+            }
+        }
+
+        // 评分等级
+        let grade, emoji;
+        if (score >= 90) {
+            grade = '优秀';
+            emoji = '🏆';
+        } else if (score >= 80) {
+            grade = '良好';
+            emoji = '✅';
+        } else if (score >= 60) {
+            grade = '一般';
+            emoji = '⚠️';
+        } else {
+            grade = '较差';
+            emoji = '❌';
+        }
+
+        const details = {
+            totalTextLength,
+            originalLength,
+            paragraphCount: parsedResult.paragraphs ? parsedResult.paragraphs.length : 0,
+            hasTitle: !!parsedResult.title,
+            hasTags: !!(parsedResult.tags && parsedResult.tags.length > 0)
+        };
+
+        return { score, reasons, warnings, emoji, grade, details };
     }
 
     /**
