@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "墨问笔记助手",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "智能整理网页内容并发布到墨问笔记",
     "permissions": [
         "activeTab",

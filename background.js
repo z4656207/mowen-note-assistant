@@ -3029,7 +3029,7 @@ ${tagsNote}`;
                 const uploadResult = uploadResults[paragraph.imageId];
                 console.log(`📤 对应的上传结果:`, uploadResult);
 
-                if(uploadResult.alt == "图片")
+                if(uploadResult.alt === "图片" || uploadResult.alt === "Image" || uploadResult.alt === "image")
                     uploadResult.alt = "";
 
                 if (uploadResult) {
